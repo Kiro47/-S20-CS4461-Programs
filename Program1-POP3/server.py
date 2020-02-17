@@ -18,8 +18,9 @@ class Message(object):
         """
         Creates a new message object
         """
-        logging.debug("Parsing message [{}]".format(message))
-        parse_message(message)
+        self.logging = logging.getLogger(self.__class__.__name__)
+        self.logging.debug("Parsing message [{}]".format(message))
+        self.parse_message(message)
         return
 
     def parse_message(self, message: str):
@@ -33,7 +34,7 @@ class Message(object):
         for line in message.splitlines():
             if self.message_contents is not None:
                 # Message parsing started:
-                self.message_contents = self.message_contents.append(line)
+                self.message_contents = self.message_contents + line
                 continue
             else:
                 # Look for headers
@@ -42,7 +43,7 @@ class Message(object):
                     data = line.split(":", 1)
                     current_header = data[0]
                     header_value = data[1]
-                    logging.debug("Parsing header[{}], content[{}]".format(
+                    self.logging.debug("Parsing header[{}], content[{}]".format(
                         current_header, header_value))
                     # set
                     self.headers[current_header] = header_value
@@ -53,7 +54,7 @@ class Message(object):
                     continue
                 else:
                     # Still parsing header data, aggregate
-                    self.headers[current_header] = self.headers[current_header].append(line)
+                    self.headers[current_header] = self.headers[current_header] + line
                     continue
             # All iters handled by continues
         return
@@ -66,6 +67,7 @@ class Mail_Repo(object):
     """
 
     repo_directory = ""
+    mail_cache = dict()
     mail_count = 0
 
     def __init__(self, directory):
@@ -80,7 +82,7 @@ class Mail_Repo(object):
             self.load_mail()
         elif os.path.exists(self.repo_directory):
             # Is a file, fail
-            logging.error("Mail Directory is a file, fail Mail_Repo init")
+            self.logging.error("Mail Directory is a file, fail Mail_Repo init")
             raise Exception("Mail Directory is a file!")
         else:
             # Create dir and set
@@ -94,7 +96,27 @@ class Mail_Repo(object):
         :mail_count: Class var, used as a counter for mail in box
         TODO: implement details
         """
-        pass
+        for email_path in os.listdir(self.repo_directory):
+            try:
+                file_data = None
+                # Load file into string
+                with open(self.repo_directory + "/" + email_path, "r") as email:
+                    file_data = email.read()
+                # If file_data is something of use
+                if file_data:
+                    self.logging.debug("Loading message[{}]: [{}]".format(self.mail_count, file_data))
+                    # Throw message into cache and increment mail counter
+                    self.mail_cache[self.mail_count] = Message(file_data)
+                    self.logging.debug("Msg Loaded[{}]: [{}]".format(self.mail_count,
+                        str(self.mail_cache[self.mail_count])))
+                    self.mail_count = self.mail_count + 1
+                    continue
+                else:
+                    self.logging.error("Unable to load message[{}]".format(self.mail_count))
+            except Exception as exception:
+                self.logging.exception("Exception Loading mail [{}]".format(email_path))
+        return
+
 
     def save_message(self, message: Message):
         """
@@ -107,14 +129,14 @@ class Mail_Repo(object):
             try:
                 with open(msg_loc, "w") as mail:
                     for header,value in message.headers:
-                        logging.log("header[{}]=> [{}]".format(header,value))
+                        self.logging.log("header[{}]=> [{}]".format(header,value))
                         mail.write("{}:{}".format(header,value))
             # Don't care to put in the time to be more narrow
             except Exception as exception:
-                logging.exception("Exception saving message at [{}]".format(msg_loc))
+                self.logging.exception("Exception saving message at [{}]".format(msg_loc))
             self.mail_count = self.mail_count + 1
         else:
-            logging.error("Attempting to save empty Message object... Ignoring")
+            self.logging.error("Attempting to save empty Message object... Ignoring")
         return
 
 
@@ -144,6 +166,8 @@ def form_cli_args():
 def main():
     # Handle CLI Args
     args = form_cli_args()
+
+    check_debug_mode(args.debug)
     directory = "./testdir" # REPLACEME
     # Handle Mail Repo
     mail_repo = Mail_Repo(directory)
