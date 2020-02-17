@@ -6,6 +6,7 @@ import logging
 import os
 import re
 import socket
+import threading
 
 # Project Imports
 from libs.Messages import Message
@@ -52,7 +53,7 @@ class Server(object):
         sockets = list()
         # new socket setup
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.bind((socket.gethostname(), port))
+        sock.bind(("127.0.0.1", port))
         sock.listen(10)
 
         try:
