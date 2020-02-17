@@ -28,11 +28,11 @@ class Client_Connection(object):
         if not port:
             self.logging.error("Port is invalid")
             return
-        self.client_runner(hostname, port)
+        self.client_init(hostname, port)
 
-    def client_runner(self, hostname: str, port: int):
+    def client_init(self, hostname: str, port: int):
         """
-        Main Client Loop
+        Main Client init
         """
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
@@ -43,6 +43,68 @@ class Client_Connection(object):
             self.logging.exception("Exception on host connection")
             return
         # Client connected
+        # Check for greeting
+        # MAGIC_NUMBER: Exact Greeting Size expected
+        greeting = sock.recv(23)
+        if greeting.decode("utf-8") == "+OK POP3 server ready":
+            print(greeting.decode("utf-8"))
+        else:
+            self.logging.error("Error with connection, aborting.")
+            self.logging.error(greeting)
+            return
+        # Start interactions
+        self.client_runner(sock)
+
+
+    def client_runner(self, socket):
+        """
+        """
+        while True:
+            action = self.get_action()
+            self.logging.debug("Running Action: [{}]".format(action))
+            # Perform Action, and be annoyed by the lack of switch statements
+            if action == "STAT":
+                pass
+            elif action == "LIST":
+                pass
+            elif action == "DELE":
+                pass
+            elif action == "TOP":
+                pass
+            elif action == "QUIT":
+                # Send Msg and Close Conn
+                # TODO: Send msg
+                print("Closing Client")
+                socket.close()
+                break
+                pass
+            elif action == "LIST":
+                pass
+            else:
+                # Shouldn't happen due to get_action verification
+                self.logging.error("Error, unknown action specified")
+            continue
+        return
+
+    def get_action(self):
+        """
+        Gets the action to perform
+
+        :return: Action String to perform
+        """
+        # Defined by RFC 1939, only 5 request from ASSIGNMENT
+        #   (5 are listed, but the number 6 is stated)
+        # Note: Assignment says "DETE" not "DELE" mostly positive that's a typo.
+        available_actions = ["STAT", "LIST", "DELE", "TOP", "QUIT"]
+        # Eventually the user will provide correct input
+        while True:
+            # Get input, couldn't find official phrase for this in RFC
+            action = input("Input Command: ").rstrip()
+            for avail in available_actions:
+                if avail == action:
+                    self.logging.debug("Approved Action [{}]".format(action))
+                    return action
+        return None
 
 
 def check_debug_mode(debug):

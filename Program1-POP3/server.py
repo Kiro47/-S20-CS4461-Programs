@@ -44,7 +44,8 @@ class Server(object):
         :sock: Client Socket
         :hostname: Hostname of client
         """
-        pass
+        # Greet and begin
+        sock.send(bytes("+OK POP3 server ready","utf-8"))
 
     def server_runner(self, port: int):
         """

@@ -1,4 +1,4 @@
 Notes:
     - In test email 3, there's a potential field "Hidden recipients", which I can't find any relevant to being a valid field.  The closest field I can find is "Undiclosed Recipients", so I can only assume to parse it as part of the CC list.
-
+    - Assignment says "DETE" not "DELE" mostly positive that's a typo as RFC defines "DELE"
 
