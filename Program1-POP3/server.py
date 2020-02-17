@@ -2,7 +2,7 @@
 
 import argparse
 import logging
-import os.path
+import os
 
 
 class Mail_Repo(object):
@@ -13,7 +13,7 @@ class Mail_Repo(object):
 
     repo_directory = ""
 
-    def __init(self, directory):
+    def __init__(self, directory):
         """
         """
         # Set logging info
@@ -22,10 +22,32 @@ class Mail_Repo(object):
         # Folder that the mail will be stored and gathered from.
         self.repo_directory = directory
         if os.path.isdir(self.repo_directory):
-            load_mail()
+            self.load_mail()
         elif os.path.exists(self.repo_directory):
             # Is a file, fail
-            pass
+            logging.error("Mail Directory is a file, fail Mail_Repo init")
+            raise Exception("Mail Directory is a file!")
+        else:
+            # Create dir and set
+            os.mkdir( directory, 755)
+        return
+
+    def load_mail(self):
+        """
+        Loads the mail from the files to a cache
+
+        TODO: implement details
+        """
+        pass
+
+class Message(object):
+
+    """
+    Mail Message Object
+    """
+
+    def __init__(self, directory):
+        pass
 
 def check_debug_mode(debug):
     """
