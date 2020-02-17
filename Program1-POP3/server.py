@@ -161,16 +161,30 @@ def form_cli_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--debug", action="store_true",
             help="toggle debug mode")
+    parser.add_argument("Port", type=int,
+            help="Port number to start on")
+    parser.add_argument("Mail_Directory",
+            help="Directory to load and store mail from")
     return parser.parse_args()
 
 def main():
     # Handle CLI Args
     args = form_cli_args()
 
+    # Mode Check
     check_debug_mode(args.debug)
-    directory = "./testdir" # REPLACEME
+
+    # Set mail repo
+    if args.Mail_Directory:
+        directory = args.Mail_Directory
+    else:
+        # This shouldn't ever happen
+        logging.error("Mail Directory not found")
+        return
     # Handle Mail Repo
     mail_repo = Mail_Repo(directory)
+    # Start Server
+    logging.info("Starting Server on port: {}".format(args.Port))
 
 if __name__ == "__main__":
     main()
