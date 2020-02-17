@@ -1,0 +1,220 @@
+
+Program 1: Simple POP3 Client/Server
+
+    Due Monday by 11:59pm Points 100 Submitting a file upload File Types zip Available after Jan 29 at 8:30am
+
+In this assignment, you will gain familiarity with socket programming in Python by implementing two simple programs: a basic POP3 server and a basic POP3 client. Your programs will only need to implement a small portion of the POP3 spec, focused on querying and interacting with the message store.
+Program Specifications
+POP3 Server
+
+You will be constructing a simple POP3 server using Python 3. This server will have access to a message store containing plaintext email files, and the server must query and modify the message store as requested by the client. More specifically, your POP3 server must support the following six POP3 commands: STAT, LIST, DETE, TOP, QUIT (a more complete description for each command can be found here and in RFC1939 (Links to an external site.)).
+
+The server implementation must be provided in a file named server.py. The server must allow for two command-line arguments: the first argument identifies the port number on which to listen for client connections; the second argument identifies the folder which should be used for the message store. You are free to provide default argument values, but we will be calling your server using the following command:
+
+    > python3 server.py <port> <ms_dir>
+
+The server should run forever, listening for TCP requests. When a client attempts to connect to the server it must accept the connection and provide a one-line greeting message to the client. Afterward, the server must listen for the client's commands, and perform the command as requested. The client connection should not be closed until the client sends the QUIT command. Otherwise, the server must wait for more input from the client socket. Your POP3 server only needs to handle one client at a time. After a client closes the connection, the server should then wait for the next client to connect.
+
+The server must manage a set of plaintext emails (RFC 5322). Each email in the message store will consist of a file in the folder specified by the second command-line argument (we are using the file system in replace of a proper message store structure). All files within this directory should be considered emails regardless of name, extension, etc. There will be no nested foldings within the message store folder.
+
+Upon initialization, the server should detect all of the files in the message store and respond to a client's queries based on this information. For example, if the client issues the LIST command, the server should report the number of emails and their respective sizes. The DELE command should have the effect of truly deleting the message from the message store (i.e, your server should actually delete the file). If I fire up the client again, deleted messages should not be available for download again.
+
+Many commands either list messages along with message-number, or take message-number as an argument. For our purposes, we will assume that message-numbers are strictly positive integers (1, 2, ...), ordered according to the natural ordering of os.listdir. The consequence of this rule is that when files are deleted the message-numbers of some messages may change.
+
+You are not required to handle any incorrect behavior. We will never send a command which would require an error (-ERR) response from the server.
+
+For testing you may use the sample emails given here.
+POP3 Client
+
+You will be constructing a simple, interactive "thin client" for POP3. This is in contrast to the behind-the-scenes behavior of a real client. The user should be prompted for input, which will consist of commands and any arguments. After sending the message to the server, the client should be able to properly receive and report the data the server has sent in response.
+
+The client implementation must be provided in a file named client.py. The client must allow for one command line argument: this argument identifies the port number on which to contact the server. You are free to provide default argument values, but we will be calling your client using the following command:
+
+    > python3 client.py <port>
+
+When started, the client should initialize a TCP connection with the server and first listen for the server's greeting message. Afterwards, the client should repeatedly prompt the user for commands, issue those commands to the server, and then print the server's response. When the user has finished their session they will provide the QUIT command to the client. After communicating the QUIT command with the server and waiting for the server's response, the client should then close the connection and terminate.
+
+Due to the structure of POP3 your client cannot be dumb; that is, your client can't just pass on commands thoughtlessly. Some commands only return one line of input and other commands return multiple lines. Your client needs to understand which command that it is sending to the server in order to know if it should expect a single- or multi-line response.
+
+You are not required to handle any incorrect behavior. We will never use your client to send a command which would require an error (-ERR) response from the server.
+Submission
+
+You will submit server.py and client.py together as a single zip archive. You are free to include any other python files that you may have created in order to solve your task. Please do not submit the test emails with your code. Please try to ensure that the files you submit unzip directly into the directory, e.g., do not zip up a folder containing your code. For example, running
+
+    > zip submission.zip server.py client.py
+
+from the Unix command line accomplishes this task.
+Grading
+
+Each program is worth 50 points. I will test all of the commands listed here, each of which will be worth 9 points for each program. A total of 5 points for each program are related to creating a TCP connection, the server sending a greeting upon connection and the client receiving the greeting and printing it to the command line. Your client and server will be mostly tested with one another, but we may attempt to run your programs with (very permissive) clients and servers of our own for the purposes of testing.
+POP3 Commands
+
+Here is a listing of the relevant details for messages and each of the five commands, pulled from RFC1939.
+Messages
+
+   Commands in the POP3 consist of a case-insensitive keyword, possibly
+   followed by one or more arguments.  All commands are terminated by a
+   CRLF pair.  Keywords and arguments consist of printable ASCII
+   characters.  Keywords and arguments are each separated by a single
+   SPACE character.  Keywords are three or four characters long. Each
+   argument may be up to 40 characters long.
+
+   Responses in the POP3 consist of a status indicator and a keyword
+   possibly followed by additional information.  All responses are
+   terminated by a CRLF pair.  Responses may be up to 512 characters
+   long, including the terminating CRLF.  There are currently two status
+   indicators: positive ("+OK") and negative ("-ERR").  Servers MUST
+   send the "+OK" and "-ERR" in upper case.
+
+   Responses to certain commands are multi-line.  In these cases, which
+   are clearly indicated below, after sending the first line of the
+   response and a CRLF, any additional lines are sent, each terminated
+   by a CRLF pair.  When all lines of the response have been sent, a
+   final line is sent, consisting of a termination octet (decimal code
+   046, ".") and a CRLF pair. You will not encounter a message where
+   this terminator is ambiguous (that is, no line will begin with the "."
+   character.
+
+Take Care! POP3 messages use LFCR (line-feed + carriage return, or \r\n) to delineate messages, and in the case of multi-line messages, POP3 will use .LFCR (that is, period followed by LFCR). The streaming property of TCP makes these terminators very important. What do I mean? If the server sends lines using multiple calls to send() and more than one of those messages arrives before recv() is called, then recv() will return all waiting messages (concatenated). Not every send is guaranteed to have a corresponding receive.
+
+Another concern to keep in mind is the buffer provided to recv(). If the currently waiting messages are larger than that buffer, then only the first part of the awaiting messages up to the buffer size will be returned. You will need to call recv() multiple times in order to construct the whole message. You will only know that you've gotten the full message once you identify the terminator code: CRLF for single-line command responses and .CRLF for multi-line command responses.
+STAT
+
+         STAT
+
+         Arguments: none
+
+         Discussion:
+             The POP3 server issues a positive response with a line
+             containing information for the maildrop.  This line is
+             called a "drop listing" for that maildrop.
+
+             In order to simplify parsing, all POP3 servers are
+             required to use a certain format for drop listings.  The
+             positive response consists of "+OK" followed by a single
+             space, the number of messages in the maildrop, a single
+             space, and the size of the maildrop in octets.  This memo
+             makes no requirement on what follows the maildrop size.
+             Minimal implementations should just end that line of the
+             response with a CRLF pair.  More advanced implementations
+             may include other information.
+
+         Possible Responses:
+             +OK nn mm
+
+         Examples:
+             C: STAT
+             S: +OK 2 320
+
+LIST
+
+         LIST [msg]
+
+         Arguments:
+             a message-number (optional)
+
+         Discussion:
+             If an argument was given and the POP3 server issues a
+             positive response with a line containing information for
+             that message.  This line is called a "scan listing" for
+             that message.
+
+             If no argument was given and the POP3 server issues a
+             positive response, then the response given is multi-line.
+             After the initial +OK, for each message in the maildrop,
+             the POP3 server responds with a line containing
+             information for that message.  This line is also called a
+             "scan listing" for that message.  If there are no
+             messages in the maildrop, then the POP3 server responds
+             with no scan listings--it issues a positive response
+             followed by a line containing a termination octet and a
+             CRLF pair.
+
+             In order to simplify parsing, all POP3 servers are
+             required to use a certain format for scan listings.  A
+             scan listing consists of the message-number of the
+             message, followed by a single space and the exact size of
+             the message in octets. This memo makes no requirement on what
+             follows the message size in the scan listing.  Minimal
+             implementations should just end that line of the response
+             with a CRLF pair.  More advanced implementations may
+             include other information, as parsed from the message.
+
+         Possible Responses:
+             +OK scan listing follows
+
+         Examples:
+             C: LIST
+             S: +OK 2 messages (320 octets)
+             S: 1 120
+             S: 2 200
+             S: .
+               ...
+             C: LIST 2
+             S: +OK 2 200
+               ...
+
+DELE
+
+         DELE msg
+
+         Arguments:
+             a message-number (required)
+
+         Discussion:
+             The POP3 server physically deletes the message from
+             the message store.
+
+         Possible Responses:
+             +OK message deleted
+
+         Examples:
+             C: DELE 1
+             S: +OK message 1 deleted
+
+TOP
+
+TOP msg n
+
+         Arguments:
+             a message-number (required), and a non-negative number
+             of lines (required)
+
+         Discussion:
+             If the POP3 server issues a positive response, then the
+             response given is multi-line.  After the initial +OK, the
+             POP3 server sends the headers of the message, the blank
+             line separating the headers from the body, and then the
+             number of lines of the indicated message's body, being
+             careful to byte-stuff the termination character (as with
+             all multi-line responses).
+
+             Note that if the number of lines requested by the POP3
+             client is greater than than the number of lines in the
+             body, then the POP3 server sends the entire message.
+
+         Possible Responses:
+             +OK top of message follows
+
+         Examples:
+             C: TOP 1 10
+             S: +OK
+             S: <the POP3 server sends the headers of the
+                message, a blank line, and the first 10 lines
+                of the body of the message>
+             S: .
+
+QUIT
+
+         QUIT
+
+         Arguments: none
+
+         Restrictions: none
+
+         Possible Responses:
+             +OK
+
+         Examples:
+             C: QUIT
+             S: +OK POP3 server signing off
