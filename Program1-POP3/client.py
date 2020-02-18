@@ -60,17 +60,24 @@ class Client_Connection(object):
         """
         """
         while True:
-            action = self.get_action()
+            action, arguments = self.get_action()
             self.logging.debug("Running Action: [{}]".format(action))
             # Perform Action, and be annoyed by the lack of switch statements
             if action == "STAT":
                 socket.send(bytes("STAT\r\n","utf-8"))
             elif action == "LIST":
-                socket.send(bytes("LIST\r\n","utf-8"))
+                if arguments:
+                    socket.send(bytes("LIST {}\r\n".format(arguments),"utf-8"))
+                else:
+                    socket.send(bytes("LIST\r\n".format(arguments),"utf-8"))
             elif action == "DELE":
                 socket.send(bytes("DELE\r\n","utf-8"))
             elif action == "TOP":
-                socket.send(bytes("TOP\r\n","utf-8"))
+                if arguments:
+                    socket.send(bytes("TOP {}\r\n".format(arguments),"utf-8"))
+                else:
+                    print("C: Incorrect Usage, Valid: TOP <message_number> <lines>")
+                    continue
             elif action == "QUIT":
                 # Send Msg and Close Conn
                 # TODO: Send msg
@@ -79,6 +86,8 @@ class Client_Connection(object):
                 response = socket.recv(5).decode("utf-8")
                 if response == "+OK\r\n":
                     print("Successfully Disconnected")
+                else:
+                    print("Questionablly Disconnected")
                 socket.close()
                 exit(1)
                 break
@@ -100,7 +109,7 @@ class Client_Connection(object):
         """
         Gets the action to perform
 
-        :return: Action String to perform
+        :return: Tuple(action,arguments) Action to perform and associated arguments
         """
         # Defined by RFC 1939, only 5 request from ASSIGNMENT
         #   (5 are listed, but the number 6 is stated)
@@ -109,11 +118,14 @@ class Client_Connection(object):
         # Eventually the user will provide correct input
         while True:
             # Get input, couldn't find official phrase for this in RFC
-            action = input("C: ").rstrip()
+            user_input = input("C: ").rstrip().split(" ",1)
+            # Build CMD + Args
+            action = user_input[0].rstrip()
+            arguments = user_input[1] if len(user_input) > 1 else None
             for avail in available_actions:
                 if avail == action:
                     self.logging.debug("Approved Action [{}]".format(action))
-                    return action
+                    return (action, arguments)
         return None
 
 

@@ -35,7 +35,7 @@ class Message(object):
         for line in message.splitlines():
             if self.message_contents is not None:
                 # Message parsing started:
-                self.message_contents = self.message_contents + line
+                self.message_contents = self.message_contents + line + "\n"
                 continue
             else:
                 # Look for headers

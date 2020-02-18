@@ -62,6 +62,57 @@ class Actions(object):
         # Terminate
         self.socket.send(bytes("\r\n.\r\n","utf-8"))
 
+    def top(self, mail_repo, argument):
+        """
+        """
+        self.logging.debug("Top ARGS: [{}]".format(argument))
+        msg_num = None
+        lines = None
+        # Arg parsing
+        if not argument:
+            self.socket.send(bytes("-ERR No arguments provided","utf-8"))
+            self.socket.send(bytes("\r\n.\r\n","utf-8"))
+            return
+        arguments = argument.split(" ")
+        if len(arguments) > 2:
+            self.socket.send(bytes("-ERR Too many arguments provided","utf-8"))
+            self.socket.send(bytes("\r\n.\r\n","utf-8"))
+            return
+        try:
+            msg_num = int(arguments[0])
+            lines = int(arguments[1])
+            if msg_num < 0 or lines < 0:
+                # quick hack to jump to except
+                raise Exception
+        except:
+            self.socket.send(bytes("-ERR Invalid message number or line number specified","utf-8"))
+            self.socket.send(bytes("\r\n.\r\n","utf-8"))
+            return
+        # Time to actually do stuff
+        email = mail_repo.mail_cache[msg_num]
+        if not email:
+            self.socket.send(bytes("-ERR Mail ID specified does not exist","utf-8"))
+            self.socket.send(bytes("\r\n.\r\n","utf-8"))
+            return
+        # Now write the message
+        self.socket.send(bytes("+OK\r\n","utf-8"))
+        # Headers
+        for header_key,header_value in email.headers.items():
+            self.socket.send(bytes("{header}: {value}\n".format(
+                header=header_key, value=header_value),"utf-8"))
+        # Msg Contents:
+        self.socket.send(bytes("\r\n","utf-8"))
+        line_counter = 1
+        for line in email.message_contents.split("\n"):
+            self.logging.debug("Line[{}] content[{}]".format(line_counter, line))
+            # Hit line cap
+            if line_counter > lines:
+                break
+            else:
+                self.socket.send(bytes(line + "\n\r","utf-8"))
+                line_counter += 1
+        self.socket.send(bytes("\r\n.\r\n","utf-8"))
+        return
 
 
 class Server(object):
@@ -109,7 +160,7 @@ class Server(object):
             self.logging.debug("Host [{}] msg: [{}]".format(hostname,data.rstrip()))
             data = data.rstrip().split(" ",1)
             command = data[0].upper()
-            argument = data[1].lstrip if (len(data) > 1) else None
+            argument = data[1].lstrip() if (len(data) > 1) else None
             # Process commands
             if command == "STAT":
                 action.stat(self.mail_repo)
@@ -120,7 +171,8 @@ class Server(object):
             elif command == "DELE":
                 pass
             elif command == "TOP":
-                pass
+                action.top(self.mail_repo, argument)
+                self.logging.debug("Finished TOP cmd")
             elif command == "QUIT":
                 # Send Msg and Close Conn
                 # TODO: Send msg
