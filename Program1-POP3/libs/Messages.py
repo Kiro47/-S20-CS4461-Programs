@@ -11,14 +11,17 @@ class Message(object):
 
     headers = dict()
     message_contents = None
+    msg_size = 0
 
     def __init__(self, message: str):
         """
         Creates a new message object
         """
         self.logging = logging.getLogger(self.__class__.__name__)
-        self.logging.debug("Parsing message [{}]".format(message))
+#        self.logging.debug("Parsing message [{}]".format(message))
         self.parse_message(message)
+        self.logging.debug("Msg content: [{}]".format(self.message_contents))
+        self.msg_size = len(self.message_contents.encode("utf-8"))
         return
 
     def parse_message(self, message: str):
@@ -42,11 +45,11 @@ class Message(object):
                     current_header = data[0]
                     header_value = data[1]
                     self.logging.debug("Parsing header[{}], content[{}]".format(
-                        current_header, header_value))
+                        current_header, header_value.lstrip()))
                     # set
-                    self.headers[current_header] = header_value
+                    self.headers[current_header] = header_value.lstrip()
                     continue
-                elif "\n" in line:
+                elif "" == line:
                     # Start message contents
                     self.message_contents = ""
                     continue

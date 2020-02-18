@@ -49,7 +49,7 @@ class Mail_Repo(object):
                     file_data = email.read()
                 # If file_data is something of use
                 if file_data:
-                    self.logging.debug("Loading message[{}]: [{}]".format(self.mail_count, file_data))
+                    #self.logging.debug("Loading message[{}]: [{}]".format(self.mail_count, file_data))
                     # Throw message into cache and increment mail counter
                     self.mail_cache[self.mail_count] = Message(file_data)
                     self.logging.debug("Msg Loaded[{}]: [{}]".format(self.mail_count,

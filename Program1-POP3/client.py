@@ -64,25 +64,35 @@ class Client_Connection(object):
             self.logging.debug("Running Action: [{}]".format(action))
             # Perform Action, and be annoyed by the lack of switch statements
             if action == "STAT":
-                pass
+                socket.send(bytes("STAT\r\n","utf-8"))
             elif action == "LIST":
-                pass
+                socket.send(bytes("LIST\r\n","utf-8"))
             elif action == "DELE":
-                pass
+                socket.send(bytes("DELE\r\n","utf-8"))
             elif action == "TOP":
-                pass
+                socket.send(bytes("TOP\r\n","utf-8"))
             elif action == "QUIT":
                 # Send Msg and Close Conn
                 # TODO: Send msg
                 print("Closing Client")
+                socket.send(bytes("QUIT\r\n","utf-8"))
+                response = socket.recv(5).decode("utf-8")
+                if response == "+OK\r\n":
+                    print("Successfully Disconnected")
                 socket.close()
+                exit(1)
                 break
-                pass
-            elif action == "LIST":
-                pass
             else:
                 # Shouldn't happen due to get_action verification
                 self.logging.error("Error, unknown action specified")
+                continue
+            # Process response
+            response = socket.recv(1024).decode("utf-8")
+            while response[-5:] != "\r\n.\r\n":
+                self.logging.debug("Waiting for more input...")
+                response += socket.recv(1024).decode("utf-8")
+            print(response[:-5])
+
             continue
         return
 
@@ -99,7 +109,7 @@ class Client_Connection(object):
         # Eventually the user will provide correct input
         while True:
             # Get input, couldn't find official phrase for this in RFC
-            action = input("Input Command: ").rstrip()
+            action = input("C: ").rstrip()
             for avail in available_actions:
                 if avail == action:
                     self.logging.debug("Approved Action [{}]".format(action))

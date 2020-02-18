@@ -12,6 +12,43 @@ import threading
 from libs.Messages import Message
 from libs.server.Mail_Repo import Mail_Repo
 
+class Actions(object):
+
+    """
+    """
+
+    socket = None
+
+    def __init__(self, socket):
+        """
+        """
+        self.logging = logging.getLogger(self.__class__.__name__)
+        self.socket = socket
+
+    def list(self, mail_repo, argument):
+        """
+        """
+        if argument:
+            pass
+        else:
+            # Get size of all mail
+            mail_size = 0
+            for uid,mail in mail_repo.mail_cache.items():
+                mail_size += mail.msg_size
+            # Signal received
+            self.socket.send(bytes(
+                "+OK {count} messages ({size} octets)\r\n".format(
+                    count=mail_repo.mail_count,size=mail_size),"utf-8"))
+            # Build Rest of Response
+            for uid,mail in mail_repo.mail_cache.items():
+                self.socket.send(bytes(
+                    "S: {uid} {size}\r\n".format(uid=uid,
+                        size=mail.msg_size),"utf-8"))
+        # Terminate
+        self.socket.send(bytes("\r\n.\r\n","utf-8"))
+
+
+
 class Server(object):
 
     """
@@ -46,6 +83,41 @@ class Server(object):
         """
         # Greet and begin
         sock.send(bytes("+OK POP3 server ready","utf-8"))
+
+        action = Actions(sock)
+        data = ""
+        while True:
+            # Wait on recv
+            data += sock.recv(1024).decode("utf-8")
+            if not data:
+                break
+            self.logging.debug("Host [{}] msg: [{}]".format(hostname,data.rstrip()))
+            data = data.rstrip().split(" ",1)
+            command = data[0].upper()
+            argument = data[1].lstrip if (len(data) > 1) else None
+            # Process commands
+            if command == "STAT":
+                pass
+            elif command == "LIST":
+                action.list(self.mail_repo, argument)
+                self.logging.debug("Finished LIST cmd")
+            elif command == "DELE":
+                pass
+            elif command == "TOP":
+                pass
+            elif command == "QUIT":
+                # Send Msg and Close Conn
+                # TODO: Send msg
+                self.logging.info("Request closing connection from [{}]".format(hostname))
+                sock.send(bytes("+OK\r\n","utf-8"))
+                sock.close()
+                self.logging.info("Connected from [{}] closed.".format(hostname))
+                break
+            else:
+                # Shouldn't happen due to get_action verification
+                self.logging.error("Error, unknown action specified")
+            data = ""
+
 
     def server_runner(self, port: int):
         """
