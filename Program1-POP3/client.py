@@ -71,7 +71,11 @@ class Client_Connection(object):
                 else:
                     socket.send(bytes("LIST\r\n".format(arguments),"utf-8"))
             elif action == "DELE":
-                socket.send(bytes("DELE\r\n","utf-8"))
+                if arguments:
+                    socket.send(bytes("DELE {}\r\n".format(arguments),"utf-8"))
+                else:
+                    print("C: Incorrect Usage, Valid: DELE <message_number>")
+                    continue
             elif action == "TOP":
                 if arguments:
                     socket.send(bytes("TOP {}\r\n".format(arguments),"utf-8"))

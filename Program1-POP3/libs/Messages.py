@@ -12,8 +12,9 @@ class Message(object):
     headers = dict()
     message_contents = None
     msg_size = 0
+    filename = None
 
-    def __init__(self, message: str):
+    def __init__(self, message: str, filename: str):
         """
         Creates a new message object
         """
@@ -22,6 +23,7 @@ class Message(object):
         self.parse_message(message)
         self.logging.debug("Msg content: [{}]".format(self.message_contents))
         self.msg_size = len(self.message_contents.encode("utf-8"))
+        self.filename = filename
         return
 
     def parse_message(self, message: str):

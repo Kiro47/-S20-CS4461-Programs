@@ -51,7 +51,7 @@ class Mail_Repo(object):
                 if file_data:
                     #self.logging.debug("Loading message[{}]: [{}]".format(self.mail_count, file_data))
                     # Throw message into cache and increment mail counter
-                    self.mail_cache[self.mail_count] = Message(file_data)
+                    self.mail_cache[self.mail_count] = Message(file_data, email_path)
                     self.logging.debug("Msg Loaded[{}]: [{}]".format(self.mail_count,
                         str(self.mail_cache[self.mail_count])))
                     self.mail_count = self.mail_count + 1
@@ -68,7 +68,7 @@ class Mail_Repo(object):
         Saves message to mail repo
         :message: Message to save to disk
         """
-        msg_loc = repo_directory + "/email" + str(self.mail_count + 1)
+        msg_loc = self.repo_directory + "/email" + str(self.mail_count + 1)
         if message:
             # Save to file
             try:
@@ -82,5 +82,19 @@ class Mail_Repo(object):
             self.mail_count = self.mail_count + 1
         else:
             self.logging.error("Attempting to save empty Message object... Ignoring")
+        return
+
+    def delete(self, message_number: int):
+        """
+        Deletes a message
+        """
+        self.logging.debug(self.mail_cache[message_number])
+        filename =  self.mail_cache[message_number].filename
+        try:
+            os.remove(self.repo_directory + "/" + filename)
+            del self.mail_cache[message_number]
+        except Exception as exception:
+            self.logging.error("Error deleting message [{}][{}]".format(
+                message_number, filename))
         return
 

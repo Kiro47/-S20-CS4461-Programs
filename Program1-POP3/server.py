@@ -37,12 +37,12 @@ class Actions(object):
                 mail_size += mail.msg_size
             # Signal received
             self.socket.send(bytes(
-                "+OK {count} messages ({size} octets)\r\n".format(
+                "+OK {count} messages ({size} octets)\n\r".format(
                     count=mail_repo.mail_count,size=mail_size),"utf-8"))
             # Build Rest of Response
             for uid,mail in mail_repo.mail_cache.items():
                 self.socket.send(bytes(
-                    "S: {uid} {size}\r\n".format(uid=uid,
+                    "S: {uid} {size}\n\r".format(uid=uid,
                         size=mail.msg_size),"utf-8"))
         # Terminate
         self.socket.send(bytes("\r\n.\r\n","utf-8"))
@@ -57,7 +57,7 @@ class Actions(object):
             mail_size += mail.msg_size
         # Signal received
         self.socket.send(bytes(
-            "+OK {count} {size} \r\n".format(
+            "+OK {count} {size} \n\r".format(
                 count=mail_repo.mail_count,size=mail_size),"utf-8"))
         # Terminate
         self.socket.send(bytes("\r\n.\r\n","utf-8"))
@@ -95,13 +95,13 @@ class Actions(object):
             self.socket.send(bytes("\r\n.\r\n","utf-8"))
             return
         # Now write the message
-        self.socket.send(bytes("+OK\r\n","utf-8"))
+        self.socket.send(bytes("+OK\n\r","utf-8"))
         # Headers
         for header_key,header_value in email.headers.items():
             self.socket.send(bytes("{header}: {value}\n".format(
                 header=header_key, value=header_value),"utf-8"))
         # Msg Contents:
-        self.socket.send(bytes("\r\n","utf-8"))
+        self.socket.send(bytes("\n\r","utf-8"))
         line_counter = 1
         for line in email.message_contents.split("\n"):
             self.logging.debug("Line[{}] content[{}]".format(line_counter, line))
@@ -111,6 +111,33 @@ class Actions(object):
             else:
                 self.socket.send(bytes(line + "\n\r","utf-8"))
                 line_counter += 1
+        self.socket.send(bytes("\r\n.\r\n","utf-8"))
+        return
+
+    def delete(self, mail_repo, argument):
+        """
+        """
+        if not argument:
+            self.socket.send(bytes("-ERR No arguments provided","utf-8"))
+            self.socket.send(bytes("\r\n.\r\n","utf-8"))
+            return
+        try:
+            msg_num = int(argument)
+            if msg_num < 0:
+                # quick hack to jump to except
+                raise Exception
+        except:
+            self.socket.send(bytes("-ERR Invalid message number specified","utf-8"))
+            self.socket.send(bytes("\r\n.\r\n","utf-8"))
+            return
+        # Start the Process
+        if not mail_repo.mail_cache[msg_num]:
+            # mail doesn't exist
+            self.socket.send(bytes("-ERR no such message","utf-8"))
+            self.socket.send(bytes("\r\n.\r\n","utf-8"))
+            return
+        mail_repo.delete(msg_num)
+        self.socket.send(bytes("+OK message {} deleted".format(msg_num),"utf-8"))
         self.socket.send(bytes("\r\n.\r\n","utf-8"))
         return
 
@@ -169,7 +196,8 @@ class Server(object):
                 action.list(self.mail_repo, argument)
                 self.logging.debug("Finished LIST cmd")
             elif command == "DELE":
-                pass
+                action.delete(self.mail_repo, argument)
+                self.logging.debug("Finished DELE cmd")
             elif command == "TOP":
                 action.top(self.mail_repo, argument)
                 self.logging.debug("Finished TOP cmd")
