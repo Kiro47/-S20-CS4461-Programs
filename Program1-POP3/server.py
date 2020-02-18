@@ -48,6 +48,21 @@ class Actions(object):
         self.socket.send(bytes("\r\n.\r\n","utf-8"))
 
 
+    def stat(self, mail_repo):
+        """
+        """
+        # Get size of all mail
+        mail_size = 0
+        for uid,mail in mail_repo.mail_cache.items():
+            mail_size += mail.msg_size
+        # Signal received
+        self.socket.send(bytes(
+            "+OK {count} {size} \r\n".format(
+                count=mail_repo.mail_count,size=mail_size),"utf-8"))
+        # Terminate
+        self.socket.send(bytes("\r\n.\r\n","utf-8"))
+
+
 
 class Server(object):
 
@@ -97,7 +112,8 @@ class Server(object):
             argument = data[1].lstrip if (len(data) > 1) else None
             # Process commands
             if command == "STAT":
-                pass
+                action.stat(self.mail_repo)
+                self.logging.debug("Finsihed STAT cmd")
             elif command == "LIST":
                 action.list(self.mail_repo, argument)
                 self.logging.debug("Finished LIST cmd")
