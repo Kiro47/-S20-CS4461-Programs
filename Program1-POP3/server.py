@@ -29,7 +29,25 @@ class Actions(object):
         """
         """
         if argument:
-            pass
+            try:
+                msg_num = int(argument)
+                if msg_num < 0:
+                    # quick hack to jump to except
+                    raise Exception
+            except:
+                self.socket.send(bytes("-ERR Invalid message number specified","utf-8"))
+                self.socket.send(bytes("\r\n.\r\n","utf-8"))
+                return
+            # Start the Process
+            email = mail_repo.mail_cache[msg_num]
+            if not email:
+                # mail doesn't exist
+                self.socket.send(bytes("-ERR no such message","utf-8"))
+                self.socket.send(bytes("\r\n.\r\n","utf-8"))
+                return
+            # List item
+            self.socket.send(bytes("S: +OK {uid} {size}\n\r".format(
+                uid=msg_num, size=email.msg_size),"utf-8"))
         else:
             # Get size of all mail
             mail_size = 0
