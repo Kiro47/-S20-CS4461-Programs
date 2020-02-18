@@ -1,4 +1,14 @@
 Notes:
-    - In test email 3, there's a potential field "Hidden recipients", which I can't find any relevant to being a valid field.  The closest field I can find is "Undiclosed Recipients", so I can only assume to parse it as part of the CC list.
-    - Assignment says "DETE" not "DELE" mostly positive that's a typo as RFC defines "DELE"
-
+    - In test email 3, there's a potential field "Hidden recipients", which
+      I can't find any relevant to being a valid field.  The closest field I
+      can find is "Undiclosed Recipients", so I can only assume to parse it as
+      part of the CC list.
+    - Assignment says "DETE" not "DELE" mostly positive that's a
+      typo as RFC defines "DELE"
+    - The assignment says 6 commands are defined,
+      but only 5 are listed, so only 5 were implemented.
+Known Bugs:
+    - Deleting a message and attempting to redelete it will hang and error.
+      This is due to the Mail_Repo's cache and whatnot.  Not enough time to fix
+      it.  Somehow forgot that it wouldn't be deleted due to object copying
+      instead of referencing.
