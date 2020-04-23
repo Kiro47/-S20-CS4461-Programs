@@ -1,0 +1,130 @@
+
+Program 2: Software Defined Networking
+
+    Due Friday by 11:59pm Points 100 Submitting a file upload File Types zip Available after Apr 1 at 8:30am
+
+In this assignment, you will be constructing a simplified software defined network. You will write three programs in total:
+
+    Controller: The Controller program is responsible for managing the software defined network. When initialized, it will know of all the devices on the network and their initial connectivity. When the link state is changed, the Controller program will update it's model of the network to include the new link or to remove the deleted link and will use a Routing program to develop new forwarding tables.
+    Switch: The Switch program is responsible for giving the user a gateway to interacting and querying network state. More appropriately, the Switch program can be thought of as a simple terminal. When started, the user requests to "login" to a specific switch in the network. When logging in, the Switch program asks the Controller program for that device's forwarding table. Afterwards, the user can query the forwarding table, add a new link, or delete and old link.
+    Routing: The Routing program is responsible for receiving adjacency matrix packets from the Controller program, indicating the connectivity of the network, performing the forward-search algorithm, and creating a specially formatted forwarding table that is communicated back to the Controller program. The Controller program is also responsible for distributing the forwarding tables to the switches when necessary.
+
+These programs will themselves be running and communicating over the network using our Python TCP socket programming. To simplify matters, we will be running all programs on the same machine, so please connect via local host.
+
+To make sure that we can follow what each program is doing, we're going to make sure that the programs are somewhat "chatty" so that there is a good visibility of what they are doing.
+Program Specifications
+The Controller Program
+
+The Controller program has perhaps the simplest logic, but the most complex network handling.
+
+You will provide an implementation of the Controller program logic in a file named controller.py. You must use Python 3. The Controller program must allow for three command-line arguments:
+
+    the port number for connecting to the Routing program
+    the port number for incoming connections from the Switch program
+    the initial network state as a file in Adjacency Matrix form
+
+There are two primary responsibilities for the Controller program: network state database, and go-between link state changes provided by the Switch program and forwarding updates calculated by the Routing program. After starting the program up and loading the network state into memory, the Controller program should wait for the Switch program to initiate a TCP connection with a request. The request will follow the plain-text Update Packet Format, and falls into one of three classes:
+
+    LOGIN:   VertexID, ADD, 0, 0.0.0.0
+    When the Switch program sends a login request, the Controller program should send back the forwarding table for the device associated with VertexID.
+    ADD:  VertexID, ADD, PORT, IP
+    When the Switch program sends an add request indicating that the switch specified by VertexID should be connected to the device specified by IP on egress port PORT, the Controller program should first update it's representation of the network, connect and forward that representation to the Routing program, await the updated forwarding tables sent back by the routing program, and finally communicate back to the Switch program the forwarding table for the currently logged in switch. The Controller program sends the adjacency matrix and source device as an Adjacency Matrix Packet and receives back a Forwarding Table Packet. The Controller program then sends the Forwarding Table Packet on to the Switch program.
+    DELETE:  VertexID, DELETE, PORT, 0.0.0.0
+    When the Switch program sends a delete request indicating that the switch specified by VertexID should no longer be connected to the device specified by IP on egress port PORT, the Controller program should first update it's representation of the network, connect and forward that representation to the Routing program, await the updated forwarding tables sent back by the routing program, and finally communicate back to the Switch program the forwarding table for the currently logged in switch. The Controller program sends the adjacency matrix and source device as an Adjacency Matrix Packet and receives back a Forwarding Table Packet. The Controller program then sends the Forwarding Table Packet on to the Switch program.
+
+Note: If a link which already exists is added, or a link that doesn't exist is dropped, then provide a default behavior. We will not test your program with this type of input.
+Note: The above description makes our network a directed graph,  since connections are one way (we only specify the egress port!). That may seem a little odd or uncomfortable, but our methods should work just the same!
+
+The Controller program should continue this process until the program is interrupted (with Ctrl-C, for example).
+The Routing Program
+
+The Routing program has the most complicated logic.
+
+You will provide an implementation of the Routing program logic in a file named routing.py. You must use Python 3. The Routing program must allow for for one command-line argument:
+
+    the port number for incoming connections from the Controller program
+
+The responsibility of the Routing program is to receive adjacency information from the Controller program, to calculate the forwarding table for a specific host/switch, and message the resulting forwarding table back to the Controller program. The Routing program receives the adjacency matrix and source device as an Adjacency Matrix Packet and sends back a Forwarding Table Packet. The Routing program should continue this loop until the program is interrupted (with Ctrl-C, for example).
+
+You should implement the forward search algorithm / Dijkstra's algorithm for calculating shortest paths, and from that, for calculating forwarding decisions.
+The Switch Program
+
+The Switch program requires interactivity and user input prompts.
+
+The switch program implementation must be provided in a file named switch.py. You must use Python 3. The switch program must allow for one command-line argument:
+
+    the port number for the controller
+
+The responsibility of the Switch program is to act as a login terminal for the network devices (which may include both hosts and switches, but for our purpose we will refer to them only as switches). The Switch program will present a prompt for user input, accepting any number of commands and in response communicating with the Controller program. The Switch program will continue to do so until a special EXIT command is provided by the user. Here are the list of commands which need to be recognized by the Switch program:
+
+    LOGIN:   LOGIN VertexID
+    The Switch program requests to login to the network device with the specified VertexID. To do so, the Switch program connects to the Controller program and sends the Update Packet [ VertexID, ADD, 0, 0.0.0.0 ]. In response to the login request, the Controller program should send back the forwarding table for the device associated with VertexID.
+    FORWARD:  FORWARD IP
+    The Switch program is provided with a properly formatted IP address, consults the forwarding table, and indicates the port to forward a datagram should be sent to arrive at the specified IP. This should not require any network communication.
+    ADD:   ADD PORT IP
+    The Switch program requests add an connection on egress port PORT going to the device at IP. To do so, the Switch program connects to the Controller program and sends the Update Packet [ VertexID, ADD, PORT, IP ]. In response to the ADD request, the Controller program should update it's network representation, utilize the Routing program to generate a new forwarding table for this device, and then deliver the updated forwarding table.
+    DELETE:   DELETE PORT
+    The Switch program requests delete the connection on egress port PORT. To do so, the Switch program connects to the Controller program and sends the Update Packet [ VertexID, DELETE, PORT, IP ]. In response to the DELETE request, the Controller program should update it's network representation, utilize the Routing program to generate a new forwarding table for this device, and then deliver the updated forwarding table.
+    EXIT: Terminate the program. You only have to terminate this program. The remaining programs will be sent interrupt signals.
+
+If the Switch program is not currently logged in to a particular device, the FORWARD, ADD, and DELETE commands can be ignored. We will not test your program on this type of invalid input, so handle these cases in a way that is convenient for you.
+Packet Summary
+
+All packets are sent in plain-text. They should follow the general format here, although you are free to decide some implementation details like End-Of-Message protocols.
+Update Packet Format
+
+This packet will be very short and simple: [ VertexID, ADD/DELETE, PORT, IP ]. This indicates that the device with ID number VertexID is reporting that egress port PortNum has either been ADDed or DELETEd from the switch.
+Forwarding Table Packet
+
+The forwarding table returned to the Controller program and passed on to the Switch program will be a simple ASCII message of addresses and egress port numbers. For our purposes, we are limiting ourselves to destination-based forwarding.
+
+141.219.10.20, 4
+10.0.1.19, 2
+...
+DESTINATION_IP, EGRESS_PORT
+
+Adjacency Matrix Packet
+
+First, let's talk about what an adjacency matrix is. Let there be a set LaTeX: M M of vertices in the graph with LaTeX: m m members. The adjacency matrix is then an LaTeX: m\times m m × m array of 0s and 1s that describe the connectivity of the graph. If any two vertices LaTeX: i i and LaTeX: j j are connected by a directed edge, the value in cell LaTeX: i,j i , j of the matrix is a 1. Otherwise it is a 0.
+
+We're going to modify this very slightly so that we can concisely communicate port numbers to the Routing program. A value of 0 still means that there is no direct connection between the two vertices. A non-zero value indicates the port number that would be used to connect to that other vertex.
+
+When the controller sends an adjacency matrix to the routing program it should have the following format, all in ASCII characters for simplicity:
+
+SourceVertexID, NumVertices
+0 = ADDRESS
+1 = ADDRESS
+...
+NumVertices-1 = ADDRESS
+
+x, x, x, ...
+x, x, x, ...
+.
+.
+.
+x, x, x, ...
+
+The file explicitly lists the IP addresses of all the devices. This is necessary to create the forwarding table.
+
+The number of rows and columns is consistent with the value sent in NumVertices. When executing Dijkstra's Algorithm, the routing program should start at the node specified in SourceVertexID.
+
+The initial state adjacency matrix file that the Controller program takes as command line input is nearly identical to the Adjacency Matrix Packet format. The only difference is that the initial network state file will not contain an entry for SourceVertexID. An initial adjacency matrix file that you can use is provided here: cs4461-adjmat.txtPreview the document
+Submission
+
+You will submit controller.py, routing.py, and switch.py together as a single zip archive. You are free to include any other python files that you may have created in order to solve your task. Please do not submit the test adjacency graph. Please try to ensure that the files you submit unzip directly into the directory, e.g., do not zip up a folder containing your code. For example, running
+
+    > zip submission.zip controller.py routing.py switch.py
+
+from the Unix command line accomplishes this task.
+Grading
+
+All three programs should indicate when they have received a message and when they have sent a message.
+
+    Please provide a timestamp at the beginning of each output statement/block so that we can observe the temporal relationship of communications.
+    You should additionally provide meaningful output for the Routing and Controller program to illustrate their function. This is especially important for the Routing program.
+
+Given the nature and coupling of the program, it is hard to separate out cases for partial credit. As such:
+
+    The program infrastructure is worth 50 points. This would comprise of the Controller, Routing, and Switch programs running, establishing connections, and the Switch program commands operating without fault (without blowing up, crashing, dying, executing bad code, etc). More concretely, I should be able to type LOGIN, have the Controller acknowledge the receipt of something and indicate that something is sent to the Router, have the Router acknowledge the receipt of something and indicate that something is sent to the Controller, have the Controller acknowledge the receipt of something and indicate that something is sent to the Switch, and finally have the Switch provide an output in response to the command. If we can see that message passing, regardless of if that message passing does anything useful/correct, then you get these points.
+    The remaining 50 points are allocated to correctness. We will use several execution sequences and test for the correctness of your responses. If you have the above sequence, most of these points are going to be given depending on the correctness of your Routing program's graph search algorithm correctness. Many of these tests will run with the provided initial state file above, although some of them will use a different initial state.
+
