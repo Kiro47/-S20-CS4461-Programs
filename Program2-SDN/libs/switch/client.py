@@ -67,14 +67,6 @@ class Client_Connection(object):
         # Start runner
         self.client_runner(sock)
 
-    def close_connection(self, sock):
-        """
-        Closes a clients connection safely
-
-        :sock: Socket of the connection to close on
-        """
-        # TODO: send EXIT data
-        sock.close()
 
     def client_runner(self, sock):
         """
@@ -86,10 +78,20 @@ class Client_Connection(object):
         try:
             while True:
                 action, arguments = actions.command()
-                self.logging.debug("Running Action: [{}]".format(action))
+                self.logging.debug("Running Action: [{}] with args [{}]".format(action, arguments))
                 # TODO: send stuff
+                if action == "LOGIN":
+                    actions.login(sock, arguments.get("vertex_id"))
+                elif action == "FORWARD":
+                    actions.forward(sock, arguments.get("ip"))
+                elif action == "ADD":
+                    actions.add(sock, arguments.get("port"), arguments.get("ip"))
+                elif action == "DELETE":
+                    actions.delete(sock, arguments.get("port"))
+                elif action == "EXIT":
+                    actions.exit(sock)
+                    break
         except KeyboardInterrupt as keeb_exception:
-            self.logging.debug("Keyboard interuption detection, shutting down")
-            print("\nClosing connections")
-            self.close_connection(sock)
+            self.logging.debug("\nKeyboard interuption detection, shutting down")
+            actions.exit(sock)
             return

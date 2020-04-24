@@ -106,7 +106,7 @@ class Server(object):
             data += sock.recv(1024).decode("utf-8")
             if not data:
                 break
-            self.logging.debug("Host [{}], msg: [{}]".format(host, data.rstrip()))
+            self.logging.debug("Host [{}], msg: [{}]".format(host, data))
             data = data.rstrip().split(",", 4)
             if len(data) != 4:
                 # Send back error message
@@ -120,7 +120,9 @@ class Server(object):
                 except ValueError as valError:
                     self.logging.exception("Exception parsing command: [{}]".format(str(data)),
                             exc_info=valError)
+                    data = ""
                     # TODO: send back error on socket
                     continue
                 # Perform actions
-                action.command(vertex, cmd, port, ip)
+                action.command(sock, vertex, cmd, port, addr)
+                data = ""

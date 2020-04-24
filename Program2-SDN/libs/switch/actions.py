@@ -2,6 +2,7 @@
 
 import logging
 import re
+import socket
 
 from .utils import is_IPV4
 
@@ -54,19 +55,19 @@ class Actions(object):
         try:
             if action == "LOGIN":
                 syntax = "LOGIN <VertexID>"
-                if len(arguments) == 1:
+                if arguments != None and len(arguments) == 1:
                     if isinstance(int(arguments[0]), int):
                         args_dict["vertex_id"] = int(arguments[0])
                         return args_dict
             elif action == "FORWARD":
                 syntax = "FORWARD <IPV4>"
-                if len(arguments) == 1:
+                if arguments != None and len(arguments) == 1:
                    if is_IPV4(arguments[0]):
                        args_dict["ip"] = arguments[0]
                        return args_dict
             elif action == "ADD":
                 syntax = "ADD <PORT> <IPV4>"
-                if len(arguments) == 2:
+                if arguments != None and len(arguments) == 2:
                     if isinstance(int(arguments[0]), int):
                         if is_IPV4(arguments[1]):
                             args_dict["port"] = int(arguments[0])
@@ -74,7 +75,7 @@ class Actions(object):
                             return args_dict
             elif action == "DELETE":
                 syntax = "DELETE <PORT>"
-                if len(arguments) == 1:
+                if arguments != None and len(arguments) == 1:
                     if isinstance(int(arguments[0]), int):
                         args_dict["port"] = int(arguments[0])
                         return args_dict
@@ -121,8 +122,9 @@ class Actions(object):
                         self.logging.debug("Approved action [{}] with args: [{}]".format(
                             action, arguments))
                         parsed_args = self.validate_command(action, arguments)
-                        if parsed_args == None: # == None, due to empty dicts evaluating to false
-                            return (action, arguments)
+                        self.logging.debug("parsed_args: [{}]".format(parsed_args))
+                        if parsed_args != None: # != None, due to empty dicts evaluating to false
+                            return (action, parsed_args)
                         else:
                             continue
             return None
@@ -131,18 +133,89 @@ class Actions(object):
                 action, arguments), exc_info=exception)
             return None
 
+    def get_response(self, sock:socket):
+        """
+        Get response data from controller
 
-    def login(self, vertex):
+        :sock: Socket to pull data from
+
+        :return: String of data received
         """
+        data = ""
+        data_start = "-- DATA START --"
+        data_end = "-- DATA END --"
+
+        greeting = sock.recv(16)
+        if greeting.decode("utf-8") == data_start:
+            self.logging.debug("Getting response: [{}]".format(greeting.decode("utf-8")))
+        else:
+            self.logging.error("Error with get response, aborting")
+            self.logging.error("Greeting: [{}]".format(greeting.decode("utf-8")))
+            return None
+
+        while True:
+            data += sock.recv(1024).decode("utf-8")
+            if data.endswith(data_end):
+                # Strip "data_end" from data
+                data = data[:-len(data_end)]
+                self.logging.debug("Data received: [{}]".format(data))
+                return data
+            else:
+                self.logging.debug("Incomplete data received so far: [{]]".format(data))
+        return None
+
+
+    def login(self, sock:socket, vertex:int):
         """
+        Login to remote controller, setting up the forwarding table for the
+        switch.
+
+        :sock: Socket of the controller host to send/recv info to/from
+        :vertex: Vertex ID to login as
+        """
+        self.vertex_id = vertex
+        login_cmd = "{vertex}, ADD, 0, 0.0.0.0".format(vertex=self.vertex_id)
+        self.logging.debug("Logging into host controller: [{}]".format(login_cmd))
+        sock.send(bytes(login_cmd,"utf-8"))
+        data = self.get_response(sock)
+        self.logging.debug("Login response: [{}]".format(data))
+        # TODO: parse forwarding table
+
+    def forward(self, ip:str):
+        """
+        Prints which port to send a packet to to get to :ip:
+
+        :ip: IPV4 to forward traffic too
+        """
+        # local only
+        # TODO: get forwarding table data
         pass
 
-    def add(self, vertex, port:int, ip:str):
+    def add(self, sock:socket, port:int, ip:str):
         """
         """
-        pass
+        add_cmd = "{vertex}, ADD, {port}, {ip}".format(vertex=self.vertex_id, port=port, ip=ip)
+        self.logging.debug("Sending ADD command to controller: [{}]".format(add_cmd))
+        sock.send(bytes(add_cmd, "utf-8"))
+        data = self.get_response(sock)
+        # TODO: parse forwarding table data
 
     def delete(self, vertex, port:int):
         """
         """
-        pass
+        delete_cmd = "{vertex}, DELTE, {port}, {ip}".format(vertex=self.vertex_id, port=port, ip=ip)
+        self.logging.debug("Sending DELETE command to controller: [{}]".format(delete_cmd))
+        sock.send(bytes(delete_cmd, "utf-8"))
+        data = self.get_response(sock)
+        # TODO: parse forwarding table data
+
+    def exit(self, sock:socket):
+        """
+        Closes a clients connection safely
+
+        :sock: Socket of the connection to close on
+        """
+        self.logging.debug("Closing sockets and preparing to exit")
+        print("\nClosing connections")
+        sock.send(bytes("{}, EXIT, 0, 0.0.0.0".format(self.vertex_id), "utf-8"))
+        sock.close()
