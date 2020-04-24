@@ -4,6 +4,7 @@ import argparse
 import logging
 
 from libs.shared.utils import check_debug_mode, is_file_path
+from libs.switch.client import Client_Connection
 
 def form_cli_args():
     """
@@ -21,6 +22,13 @@ def form_cli_args():
     parser.add_argument("ControllerPort", type=int,
             help="Port to listen to incoming connections from switches")
     return parser.parse_args()
+
+def client_connect(controller_host:str, controller_port:int):
+    """
+    Wrapper to start client connection to controller
+    """
+    Client_Connection(controller_host, controller_port)
+
 
 def main():
     # Handle CLI Args
@@ -40,6 +48,7 @@ def main():
     logging.info("Connecting to controller at [{}] on port [{}]".format(
         controller_host, args.ControllerPort))
     # Start things
+    client_connect(controller_host, args.ControllerPort)
 
 if __name__ == "__main__":
     main()

@@ -96,8 +96,8 @@ class Server(object):
         :sock: Client socket
         :host: Hostname of the client
         """
-        sock.send(bytes("", "utf-8")) # TODO: Send "connection established" message
-
+        # Send connection established message
+        sock.send(bytes("-- CONNECTION ESTABLISHED --", "utf-8"))
         action = Actions()
         data = ""
 
@@ -106,7 +106,7 @@ class Server(object):
             data += sock.recv(1024).decode("utf-8")
             if not data:
                 break
-            self.logging.debug("Host [{}], msg: [{}]".format(hostname, data.rstrip()))
+            self.logging.debug("Host [{}], msg: [{}]".format(host, data.rstrip()))
             data = data.rstrip().split(",", 4)
             if len(data) != 4:
                 # Send back error message
