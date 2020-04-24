@@ -2,8 +2,11 @@
 
 import argparse
 import logging
+import threading
 
 from libs.shared.utils import check_debug_mode, is_file_path
+from libs.controller.actions import Actions
+from libs.controller.server import Server
 
 def form_cli_args():
     """
@@ -28,6 +31,12 @@ def form_cli_args():
             help="File containing initial adjacency matirx data")
     return parser.parse_args()
 
+def start_server(listening_range:str, listener_port:int ):
+    """
+    Wrapper to start switch listening server
+    """
+    Server(listening_range, listener_port)
+
 def main():
     # Handle CLI Args
     args = form_cli_args()
@@ -37,15 +46,15 @@ def main():
 
     host = None
     # Set default args
+    listening_range = "localhost"
     if not args.listening_range:
         logging.debug("'--listening_range' empty, set to localhost")
-        listening_range = "localhost"
     else:
         listening_range = args.listening_range
 
+    router_host = "localhost"
     if not args.router_host:
         logging.debug("'--router_host' empty, set to localhost")
-        router_host = "localhost"
     else:
         router_host = args.router_host
     # Start Logs
@@ -56,6 +65,20 @@ def main():
     logging.info("Loading with inital rules from [{}].".format(
         args.InitialMatrix))
     # Start things
+    #TODO: remove, testing actions
+    start_server(listening_range, args.ListenerPort)
+    # Originally meant to thread off, but maybe not this time
+    # switching design to spawn routing connections as required instead of a constant stream?
+    # Or maybe spawn it inside server
+#    server_thread = threading.Thread(target=start_server,args=(listening_range, args.ListenerPort))
+#    server_thread.start()
+#    try:
+#        while True:
+#            pass
+#    except KeyboardInterrupt as keeb_exception:
+#        self.logging.info("Shutting down server")
+#        return
+
 
 if __name__ == "__main__":
     main()

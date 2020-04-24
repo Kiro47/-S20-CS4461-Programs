@@ -1,3 +1,4 @@
 testdir
 *.pyc
 *.pyo
+venv
