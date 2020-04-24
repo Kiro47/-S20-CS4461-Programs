@@ -3,26 +3,21 @@
 import logging
 import socket
 import threading
-
 from .utils import is_IPV4
-from .actions import Actions
 
-class Server(object):
+class RoutingServer(object):
 
     """
-    Server class which handles incoming connections
-    from Switches to the controller.
     """
 
-    def __init__(self, listening_range:str, listener_port:int ):
+    def __init__(self, listening_range:str, listening_port:int):
         """
         """
         self.logging = logging.getLogger(self.__class__.__name__)
-        self.logging.debug("Init for server listener")
-        # Verify args
-        self.verify_args(listening_range, listener_port) # Let exception rise up
+        self.logging.debug("Init for routing server")
+        self.verify_args(listening_range, listening_port) # Let exceptions rise up
         # Start server
-        self.server_runner(listening_range, listener_port)
+        self.server_runner(listening_range, listening_port)
 
     def verify_args(self, listening_range:str, listener_port:int):
         """
@@ -45,19 +40,19 @@ class Server(object):
             raise ValueError("Invalid listener port: [{}]".format(listener_port))
         return
 
-    def server_runner(self, listening_range:str, listener_port:int):
+    def server_runner(self, listening_range:str, listening_port:int):
         """
-        Controller Switch Listener instance
+        Routing Listening instance
 
         :listening_range: IPV4 to listen to traffic from
-        :listener_port: Port to listen to traffic on
+        :listening_port: Port to listen to traffic on
         """
-        self.logging.info("Starting server listener for {listening_range} on port {listener_port}".format(
-            listening_range=listening_range, listener_port=listener_port))
+        self.logging.info("Starting server listener for {listening_range} on port {listening_port}".format(
+            listening_range=listening_range, listening_port=listening_port))
         sockets = list()
-        # New sockets
+        # New sockets listener
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.bind((listening_range, listener_port))
+        sock.bind((listening_range, listening_port))
         sock.listen(20)
 
         # Listening loop
@@ -73,7 +68,6 @@ class Server(object):
             # Close all sockets and clean up
             self.logging.debug("Closing sockets...")
             for active_socket in sockets:
-
                 if active_socket:
                     active_socket.close()
             sock.close()
@@ -89,16 +83,16 @@ class Server(object):
             return
         return
 
-    def client_listener(self, sock, host):
+    def client_listener(self, client_sock, client_addr):
         """
         Client Listener/interactions
 
         :sock: Client socket
-        :host: Hostname of the client
+        :host Hostname of the cliet
         """
-        sock.send(bytes("", "utf-8")) # TODO: Send "connection established" message
+        sock.send(bytes("", "utf-8")) # TODO: send "Connection established" message
 
-        action = Actions()
+        actions = Actions()
         data = ""
 
         while True:
@@ -107,20 +101,4 @@ class Server(object):
             if not data:
                 break
             self.logging.debug("Host [{}], msg: [{}]".format(hostname, data.rstrip()))
-            data = data.rstrip().split(",", 4)
-            if len(data) != 4:
-                # Send back error message
-                pass
-            else:
-                try:
-                    vertex = data[0].strip()
-                    cmd = data[1].strip()
-                    port = int(data[2].strip())
-                    addr = data[3].strip()
-                except ValueError as valError:
-                    self.logging.exception("Exception parsing command: [{}]".format(str(data)),
-                            exc_info=valError)
-                    # TODO: send back error on socket
-                    continue
-                # Perform actions
-                action.command(vertex, cmd, port, ip)
+#            data = data.rstrip().split("",4)

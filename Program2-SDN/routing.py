@@ -4,6 +4,7 @@ import argparse
 import logging
 
 from libs.shared.utils import check_debug_mode, is_file_path
+from libs.routing.server import RoutingServer
 
 def form_cli_args():
     """
@@ -23,6 +24,12 @@ def form_cli_args():
     parser.add_argument("ListenerPort", type=int,
             help="Port to listen to incoming connections from switches")
     return parser.parse_args()
+
+def start_server(listening_range:str, listening_port:int):
+    """
+    Wrapper to start controller listening server
+    """
+    RoutingServer(listening_range, listening_port)
 
 def main():
     # Handle CLI Args
@@ -48,6 +55,7 @@ def main():
     logging.info("Preparing switch listener for [{}] on port [{}]".format(
         listening_range, args.ListenerPort))
     # Start things
+    start_server(listening_range, args.ListenerPort)
 
 if __name__ == "__main__":
     main()
