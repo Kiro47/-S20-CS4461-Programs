@@ -23,9 +23,15 @@ def check_debug_mode(debug: bool):
     :debug: Variable to toggle debug or info
     """
     if debug:
-        logging.basicConfig(level=logging.DEBUG)
+        logging.basicConfig(
+                level=logging.DEBUG,
+                format='%(asctime)s %(levelname)s:%(name)s:%(funcName)s:%(message)s'
+                )
         logging.debug("Debugging enabled")
     else:
-        logging.basicConfig(level=logging.INFO)
+        logging.basicConfig(
+                level=logging.INFO,
+                format='%(asctime)s %(levelname)s:%(name)s:%(message)s'
+                )
     return
 
