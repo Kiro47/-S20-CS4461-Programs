@@ -3,7 +3,9 @@
 import logging
 import socket
 import threading
-from .utils import is_IPV4
+from ..shared.packets import Adjacency_Matrix_Packet, Adjacency_Matrix_Utils
+from ..shared.utils import is_IPV4
+from ..shared.data_transfer import send_greeting, recv_data, send_data
 
 class RoutingServer(object):
 
@@ -90,15 +92,26 @@ class RoutingServer(object):
         :sock: Client socket
         :host Hostname of the cliet
         """
-        sock.send(bytes("", "utf-8")) # TODO: send "Connection established" message
+        send_greeting("Routing", client_sock)
 
-        actions = Actions()
         data = ""
+        adj_matrix_utils = Adjacency_Matrix_Utils("Router")
 
         while True:
-            # Wait on recv data
-            data += sock.recv(1024).decode("utf-8")
-            if not data:
-                break
-            self.logging.debug("Host [{}], msg: [{}]".format(hostname, data.rstrip()))
-#            data = data.rstrip().split("",4)
+            data = recv_data("Router", client_sock)
+            self.logging.debug("Host [{}], msg: [{}]".format(client_addr, data.rstrip()))
+            # Check if initial load or another
+            first_line = data.splitlines()[0].strip()
+            packet = None
+            if first_line:
+                packet = adj_matrix_utils.parse_packet(data)
+            if len(first_line.split(",")) == 2:
+                # Update tables
+                pass
+            elif len(first_line.split(",")) == 1:
+                # Initialize tables
+                pass
+            else:
+                # Error
+                self.logging.error("Invalid adjacency matrix packet received")
+                continue

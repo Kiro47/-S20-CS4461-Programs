@@ -202,6 +202,12 @@ class Adjacency_Matrix_Utils(object):
                         source_vertex=source_vertex_id, vertices=hosts))
                     context = self.Context.HOST_IDEN
                     continue
+                if data and len(data) == 1:
+                    # Initialization
+                    hosts = int(data[0].strip()) if isinstance(int(data[0].strip()), int) else None
+                    self.logger.debug("Initial packet: vertices[{vertices}]".format(vertices=hosts))
+                    context = self.Context.HOST_IDEN
+                    continue
             elif context == self.Context.HOST_IDEN:
                 data = line.split("=",2)
                 self.logger.debug("Context [{}], Data[{}]".format(context, data))

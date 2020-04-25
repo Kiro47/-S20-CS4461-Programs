@@ -5,17 +5,46 @@ import re
 import socket
 
 from ..shared.utils import is_IPV4
-from ..shared.data_transfer import recv_data, send_data
+from ..shared.data_transfer import recv_data, send_data, recv_greeting
 
 class Actions(object):
 
     """
     """
 
-    def __init__(self):
+    router_sock = None
+
+    def __init__(self, router_host:str, router_port:int):
         """
         """
         self.logging = logging.getLogger(self.__class__.__name__)
+        self.logging.debug("Initializing actions")
+        self.connect_routing(router_host, router_port)
+
+    def connect_routing(self, router_host:str, router_port:int):
+        """
+        Creates and attaches a socket to routing server
+        Establishes self.router_sock as connection
+
+        :router_host: Hostname/IP of the router server
+        :router_port: Port number to connect to
+        """
+        self.logging.info("Connecting to router at [{}] on [{}]".format(router_host, router_port))
+        if self.router_sock:
+            return
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            sock.connect((router_host, router_port))
+        except ConnectionRefusedError as refused:
+            self.logging.exception("Unable to connect to routing host [{}]".format(host))
+        except Exception as exception:
+            self.logging.exception("Exception on connecting to router", exc_info=exception)
+        # Client connected, wait for greeting
+        if not recv_greeting("Controller", sock):
+            return
+        # Set socket
+        self.logging.info("Connected to router, socked set")
+        self.router_sock = sock
 
     def validate_command(self, vertex:int, cmd:str, port:int, ip:str):
         """

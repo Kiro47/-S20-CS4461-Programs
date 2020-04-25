@@ -5,7 +5,7 @@ import socket
 import threading
 
 from ..shared.utils import is_IPV4, is_file_path
-from ..shared.data_transfer import send_greeting
+from ..shared.data_transfer import send_greeting, recv_greeting, send_data, recv_data
 from ..shared.packets import Adjacency_Matrix_Utils
 from .actions import Actions
 
@@ -16,19 +16,41 @@ class Server(object):
     from Switches to the controller.
     """
 
-    def __init__(self, listening_range:str, listener_port:int, adj_matrix_file:str ):
+    def __init__(self, listening_range:str, listener_port:int, adj_matrix_file:str, router_host:str, routing_port:int):
         """
         """
         self.logging = logging.getLogger(self.__class__.__name__)
         self.logging.debug("Init for server listener")
         # Verify args
         self.verify_args(listening_range, listener_port, adj_matrix_file) # Let exception rise up
+        # Load initial routing
+        self.initialize_routing(adj_matrix_file, router_host, routing_port)
+        # Start server
+        self.server_runner(listening_range, listener_port, router_host, routing_port)
+
+    def initialize_routing(self, adj_matrix_file:str, router_host:str, router_port:int):
+        """
+        """
         # Build initial tables
         adj_utils = Adjacency_Matrix_Utils("Server")
         packet = adj_utils.parse_initial_packet(adj_matrix_file)
-        adj_utils.parse_packet("0, " + str(packet))
-        # Start server
-        self.server_runner(listening_range, listener_port)
+        #adj_utils.parse_packet("0, " + str(packet)) # testing for packet parser
+        # Connect to router
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            sock.connect((router_host, router_port))
+        except ConnectionRefusedError as refused:
+            self.logging.exception("Unable to connect to routing host [{}]".format(host))
+        except Exception as exception:
+            self.logging.exception("Exception on connecting to router", exc_info=exception)
+        # Client connected, wait for greeting
+        if not recv_greeting("Controller", sock):
+            return
+        self.logging.info("Connected to router, uploading initial adjacency matrix")
+        send_data("Controller", sock, str(packet))
+        # Wait on forwarding table packet
+        forwarding_packet = recv_data("Controller", sock)
+
 
     def verify_args(self, listening_range:str, listener_port:int, adj_matrix_file:str):
         """
@@ -55,7 +77,7 @@ class Server(object):
             raise ValueError("Invalid adj matrix file: [{}]".format(listener_port))
         return
 
-    def server_runner(self, listening_range:str, listener_port:int):
+    def server_runner(self, listening_range:str, listener_port:int, router_host:str, routing_port:int):
         """
         Controller Switch Listener instance
 
@@ -76,7 +98,8 @@ class Server(object):
                 client_sock, client_addr = sock.accept()
                 self.logging.info("Accepting connection from [{}]".format(client_addr))
                 sockets.append(client_sock)
-                client_thread = threading.Thread(target=self.client_listener, args=(client_sock, client_addr))
+                client_thread = threading.Thread(target=self.client_listener, args=(client_sock, client_addr,
+                    router_host, routing_port))
                 client_thread.start()
         except KeyboardInterrupt as keeb_exception:
             self.logging.info("Shutting down server")
@@ -99,7 +122,7 @@ class Server(object):
             return
         return
 
-    def client_listener(self, sock, host):
+    def client_listener(self, sock:socket, host:str, router_host:str, routing_port:int):
         """
         Client Listener/interactions
 
@@ -108,7 +131,7 @@ class Server(object):
         """
         # Send connection established message
         send_greeting("Server", sock)
-        action = Actions()
+        action = Actions(router_host, routing_port)
         data = ""
 
         while True:

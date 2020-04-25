@@ -32,11 +32,11 @@ def form_cli_args():
             help="File containing initial adjacency matirx data")
     return parser.parse_args()
 
-def start_server(listening_range:str, listener_port:int, adj_filepath:str):
+def start_server(listening_range:str, listener_port:int, adj_filepath:str, router_host:str, routing_port:int):
     """
     Wrapper to start switch listening server
     """
-    Server(listening_range, listener_port, adj_filepath)
+    Server(listening_range, listener_port, adj_filepath, router_host, routing_port)
 
 def main():
     # Handle CLI Args
@@ -66,19 +66,7 @@ def main():
     logging.info("Loading with inital rules from [{}].".format(
         args.InitialMatrix))
     # Start things
-    start_server(listening_range, args.ListenerPort, args.InitialMatrix)
-    # Originally meant to thread off, but maybe not this time
-    # switching design to spawn routing connections as required instead of a constant stream?
-    # Or maybe spawn it inside server
-#    server_thread = threading.Thread(target=start_server,args=(listening_range, args.ListenerPort))
-#    server_thread.start()
-#    try:
-#        while True:
-#            pass
-#    except KeyboardInterrupt as keeb_exception:
-#        self.logging.info("Shutting down server")
-#        return
-
+    start_server(listening_range, args.ListenerPort, args.InitialMatrix, router_host, args.RoutingPort)
 
 if __name__ == "__main__":
     main()
