@@ -4,6 +4,7 @@ import logging
 import socket
 
 from .actions import Actions
+from ..shared.data_transfer import recv_greeting
 
 class Client_Connection(object):
 
@@ -57,12 +58,7 @@ class Client_Connection(object):
         except Exception as exception:
             self.logging.exception("Exception on connecting to controller", exc_info=exception)
         # Client connected, wait for greeting
-        greeting = sock.recv(30)
-        if greeting.decode('utf-8') == "-- CONNECTION ESTABLISHED --":
-            print(greeting.decode("utf-8"))
-        else:
-            self.logging.error("Error with connection, aborting.")
-            self.logging.error(greeting.decode("utf-8"))
+        if not recv_greeting("Switch", sock):
             return
         # Start runner
         self.client_runner(sock)

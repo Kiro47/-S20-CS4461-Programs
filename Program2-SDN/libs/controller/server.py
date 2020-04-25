@@ -5,6 +5,7 @@ import socket
 import threading
 
 from ..shared.utils import is_IPV4
+from ..shared.data_transfer import send_greeting
 from .actions import Actions
 
 class Server(object):
@@ -97,7 +98,7 @@ class Server(object):
         :host: Hostname of the client
         """
         # Send connection established message
-        sock.send(bytes("-- CONNECTION ESTABLISHED --", "utf-8"))
+        send_greeting("Server", sock)
         action = Actions()
         data = ""
 

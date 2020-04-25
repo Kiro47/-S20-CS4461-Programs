@@ -50,3 +50,34 @@ def recv_data(app:str, sock:socket):
             logger.debug("Incomplete data received so far: [{]]".format(data))
     return None
 
+
+def send_greeting(app:str, sock:socket):
+    """
+    Send greeting message for initial connection
+
+    :app: Which application is sending the data
+    :sock: Socket to send greeting on
+    """
+    sock.send(bytes("-- CONNECTION ESTABLISHED --", "utf-8"))
+
+def recv_greeting(app:str, sock:socket):
+    """
+
+    :app: Which application is receiving the data
+    :sock: Socket to receive the greeting on
+
+    :return: Boolean, True if valid greeting, false otherwise
+    """
+    logger = logging.getLogger(app)
+    greeting = sock.recv(28)
+    if greeting.decode('utf-8') == "-- CONNECTION ESTABLISHED --":
+        logger.debug("Connection established with host [{host}] on port [{port}]".format(
+            host=sock.getpeername()[0], port=sock.getsockname()[1]))
+        print(greeting.decode("utf-8"))
+        return True
+    else:
+        logger.error("Error with connection, aborting.")
+        logger.error(greeting.decode("utf-8"))
+        return False
+
+
