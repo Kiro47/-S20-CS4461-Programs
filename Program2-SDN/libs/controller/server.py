@@ -4,7 +4,7 @@ import logging
 import socket
 import threading
 
-from .utils import is_IPV4
+from ..shared.utils import is_IPV4
 from .actions import Actions
 
 class Server(object):

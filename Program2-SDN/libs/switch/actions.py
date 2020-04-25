@@ -4,8 +4,8 @@ import logging
 import re
 import socket
 
-from .utils import is_IPV4
-
+from ..shared.utils import is_IPV4
+from ..shared.data_transfer import send_data, recv_data
 
 class Actions(object):
 
@@ -133,37 +133,15 @@ class Actions(object):
                 action, arguments), exc_info=exception)
             return None
 
-    def get_response(self, sock:socket):
+    def recv_data(self, sock:socket):
         """
-        Get response data from controller
+        Wrapper for ..shared.data_transfer recv_data
 
         :sock: Socket to pull data from
 
         :return: String of data received
         """
-        data = ""
-        data_start = "-- DATA START --"
-        data_end = "-- DATA END --"
-
-        greeting = sock.recv(16)
-        if greeting.decode("utf-8") == data_start:
-            self.logging.debug("Getting response: [{}]".format(greeting.decode("utf-8")))
-        else:
-            self.logging.error("Error with get response, aborting")
-            self.logging.error("Greeting: [{}]".format(greeting.decode("utf-8")))
-            return None
-
-        while True:
-            data += sock.recv(1024).decode("utf-8")
-            if data.endswith(data_end):
-                # Strip "data_end" from data
-                data = data[:-len(data_end)]
-                self.logging.debug("Data received: [{}]".format(data))
-                return data
-            else:
-                self.logging.debug("Incomplete data received so far: [{]]".format(data))
-        return None
-
+        return recv_data("Switch", sock)
 
     def login(self, sock:socket, vertex:int):
         """
@@ -177,7 +155,7 @@ class Actions(object):
         login_cmd = "{vertex}, ADD, 0, 0.0.0.0".format(vertex=self.vertex_id)
         self.logging.debug("Logging into host controller: [{}]".format(login_cmd))
         sock.send(bytes(login_cmd,"utf-8"))
-        data = self.get_response(sock)
+        data = self.recv_data(sock)
         self.logging.debug("Login response: [{}]".format(data))
         # TODO: parse forwarding table
 
@@ -197,7 +175,7 @@ class Actions(object):
         add_cmd = "{vertex}, ADD, {port}, {ip}".format(vertex=self.vertex_id, port=port, ip=ip)
         self.logging.debug("Sending ADD command to controller: [{}]".format(add_cmd))
         sock.send(bytes(add_cmd, "utf-8"))
-        data = self.get_response(sock)
+        data = self.recv_data(sock)
         # TODO: parse forwarding table data
 
     def delete(self, vertex, port:int):
@@ -206,7 +184,7 @@ class Actions(object):
         delete_cmd = "{vertex}, DELTE, {port}, {ip}".format(vertex=self.vertex_id, port=port, ip=ip)
         self.logging.debug("Sending DELETE command to controller: [{}]".format(delete_cmd))
         sock.send(bytes(delete_cmd, "utf-8"))
-        data = self.get_response(sock)
+        data = self.recv_data(sock)
         # TODO: parse forwarding table data
 
     def exit(self, sock:socket):

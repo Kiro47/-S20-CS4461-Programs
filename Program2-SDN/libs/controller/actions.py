@@ -4,8 +4,8 @@ import logging
 import re
 import socket
 
-from .utils import is_IPV4
-
+from ..shared.utils import is_IPV4
+from ..shared.data_transfer import recv_data, send_data
 
 class Actions(object):
 
@@ -25,7 +25,7 @@ class Actions(object):
             ))
         # Check if cmd is valid
         cmd = cmd.upper()
-        if cmd == "ADD" or cmd == "DELETE":
+        if cmd == "ADD" or cmd == "DELETE" or cmd == "EXIT":
             pass
         else:
             raise ValueError("Invalid command value: {}".format(cmd))
@@ -73,19 +73,14 @@ class Actions(object):
             self.exit(sock, vertex)
         return
 
-
     def send_data(self, sock:socket, data:str):
         """
-        Sends data to socket with proper start/end headers
+        Wrapper for ..shared.data_transer send_data
 
         :sock: Socket to send data on
         :data: Data string to send (pre bytes())
         """
-        data_start = "-- DATA START --"
-        data_end = "-- DATA END --"
-        data_packet = data_start + data + data_end
-        sock.send(bytes(data_packet,"utf-8"))
-
+        send_data("Controller", sock, data)
 
     def login(self, sock:socket, vertex:int):
         """
@@ -96,7 +91,7 @@ class Actions(object):
         """
         # TODO: get data from adjacency matrix
         data = "TEST LOGIN"  # Temp until the above is fiured out
-        self.logging.info("Received login from: [{addr}] on port [{port}] with vertex_id [{vertex}]".format(
+        self.logging.info("eceived login from: [{addr}] on port [{port}] with vertex_id [{vertex}]".format(
             addr=sock.getpeername()[0], port=sock.getsockname()[1], vertex=vertex
             ))
         self.send_data(sock, data)
@@ -122,6 +117,9 @@ class Actions(object):
         :sock: Socket to clean up
         :vertex: Vertex ID that is closing
         """
+        self.logging.info("Vertex[{vertex}] session from {addr} on port {port} closed".format(
+            vertex=vertex, addr=sock.getpeername()[0], port=sock.getsockname()[1]
+            ))
         self.logging.debug("Closing socket for vertex: {}".format(vertex))
         sock.close()
         exit(0)
