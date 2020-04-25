@@ -4,8 +4,9 @@ import logging
 import socket
 import threading
 
-from ..shared.utils import is_IPV4
+from ..shared.utils import is_IPV4, is_file_path
 from ..shared.data_transfer import send_greeting
+from ..shared.packets import Adjacency_Matrix_Utils
 from .actions import Actions
 
 class Server(object):
@@ -15,17 +16,21 @@ class Server(object):
     from Switches to the controller.
     """
 
-    def __init__(self, listening_range:str, listener_port:int ):
+    def __init__(self, listening_range:str, listener_port:int, adj_matrix_file:str ):
         """
         """
         self.logging = logging.getLogger(self.__class__.__name__)
         self.logging.debug("Init for server listener")
         # Verify args
-        self.verify_args(listening_range, listener_port) # Let exception rise up
+        self.verify_args(listening_range, listener_port, adj_matrix_file) # Let exception rise up
+        # Build initial tables
+        adj_utils = Adjacency_Matrix_Utils("Server")
+        packet = adj_utils.parse_initial_packet(adj_matrix_file)
+        adj_utils.parse_packet("0, " + str(packet))
         # Start server
         self.server_runner(listening_range, listener_port)
 
-    def verify_args(self, listening_range:str, listener_port:int):
+    def verify_args(self, listening_range:str, listener_port:int, adj_matrix_file:str):
         """
         Verify initialization arguments for the server are valid
 
@@ -44,6 +49,10 @@ class Server(object):
             pass
         else:
             raise ValueError("Invalid listener port: [{}]".format(listener_port))
+        if is_file_path(adj_matrix_file):
+            pass
+        else:
+            raise ValueError("Invalid adj matrix file: [{}]".format(listener_port))
         return
 
     def server_runner(self, listening_range:str, listener_port:int):

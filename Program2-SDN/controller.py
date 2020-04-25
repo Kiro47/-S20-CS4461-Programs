@@ -5,6 +5,7 @@ import logging
 import threading
 
 from libs.shared.utils import check_debug_mode, is_file_path
+from libs.shared.packets import Adjacency_Matrix_Utils
 from libs.controller.actions import Actions
 from libs.controller.server import Server
 
@@ -31,11 +32,11 @@ def form_cli_args():
             help="File containing initial adjacency matirx data")
     return parser.parse_args()
 
-def start_server(listening_range:str, listener_port:int ):
+def start_server(listening_range:str, listener_port:int, adj_filepath:str):
     """
     Wrapper to start switch listening server
     """
-    Server(listening_range, listener_port)
+    Server(listening_range, listener_port, adj_filepath)
 
 def main():
     # Handle CLI Args
@@ -65,8 +66,7 @@ def main():
     logging.info("Loading with inital rules from [{}].".format(
         args.InitialMatrix))
     # Start things
-    #TODO: remove, testing actions
-    start_server(listening_range, args.ListenerPort)
+    start_server(listening_range, args.ListenerPort, args.InitialMatrix)
     # Originally meant to thread off, but maybe not this time
     # switching design to spawn routing connections as required instead of a constant stream?
     # Or maybe spawn it inside server
