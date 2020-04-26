@@ -8,41 +8,14 @@ from .graph import Node, Graph
 class Matrix_Data:
 
     """
-    Matrix Data (singleton)
+    Matrix Data
     """
-
-
-    # storage for the instance reference
-    __instance = None
-
-    class __impl:
-        """
-        binding for singleton implementation
-        """
 
     def __init__(self):
         """
         """
-        # Check whether we already have an instance
-        if Matrix_Data.__instance is None:
-            # Create and remember instance
-            Matrix_Data.__instance = Matrix_Data.__impl()
-            self.logging = logging.getLogger(self.__class__.__name__)
+        self.logging = logging.getLogger(self.__class__.__name__)
 
-        # Store instance reference as the only member in the handle
-        self.__dict__['_Singleton__instance'] = Matrix_Data.__instance
-
-    def __getattr__(self, attr):
-        """
-        Delegate access to implementation
-        """
-        return getattr(self.__instance, attr)
-
-    def __setattr__(self, attr, value):
-        """
-        Delegate access to implementation
-        """
-        return setattr(self.__instance, attr, value)
 
     def initialize(self, packet:Adjacency_Matrix_Packet):
         """

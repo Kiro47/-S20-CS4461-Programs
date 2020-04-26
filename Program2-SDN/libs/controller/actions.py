@@ -139,7 +139,7 @@ class Actions(object):
     def add(self, sock:socket, vertex:int, port:int, ip:str):
         """
         """
-        self.logging.info("Adding connection  vertex[{}] at [{}]:[{}] : [{}]:[{}]".format(vertex,
+        self.logging.info("Adding connection  for vertex[{}] at [{}]:[{}] : [{}]:[{}]".format(vertex,
             sock.getpeername()[0], sock.getsockname()[1], ip, port))
         self.network_state.update_port(vertex, port, ip)
         send_data("Controller", self.router_sock, (f"{vertex}, " + str(self.network_state.adjacency_packet)))
@@ -151,10 +151,10 @@ class Actions(object):
     def delete(self, sock:socket, vertex:int, port:int):
         """
         """
-        self.logging.info("Removing connection  vertex[{}] at [{}]:[{}] : [{}]:[{}]".format(vertex,
-            sock.getpeername()[0], sock.getsockname()[1]), ip, port)
+        self.logging.info("Removing connection for vertex[{}] at [{}]:[{}] : Vertex[{}]:Port[{}]".format(vertex,
+            sock.getpeername()[0], sock.getsockname()[1], vertex, port))
         self.network_state.update_port(vertex, port, "0.0.0.0")
-        self.send_data(sock, data)
+        self.send_data(self.router_sock, (f"{vertex}, " + str(self.network_state.adjacency_packet)))
         data = recv_data("Controller", self.router_sock)
         self.logging.info("Connection Removed")
         self.send_data(sock, data)

@@ -1,0 +1,11 @@
+Notes:
+    - The ADD command, was assumed to be adding another existing route.
+      Considering the implications it was assumed no new hosts could be added
+    - If you don't think there is enough logging for a specific application, all
+      of the applications include a "--debug" flag with significantly more info.
+Known Bugs:
+    - There's a possible race condition that can happen if two or more switches
+      attempt to update their tables in the same instant.  The solution to
+      getting around this would involve building a thread pool with a job
+      queue and would take a few hours just to figure out how to do, so
+      it was ignored for the scope of this program.

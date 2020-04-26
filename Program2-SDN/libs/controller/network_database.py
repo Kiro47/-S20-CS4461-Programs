@@ -77,10 +77,11 @@ class Network_State:
         connections = packet.host_data[vertex].connections
         self.logging.debug("Connections: [{}]".format(connections))
         for index, val in enumerate(connections):
-            connections[index] = val.strip()
+            if isinstance(val, str):
+                connections[index] = val.strip()
         # Because ports start at 1
         if ip == "0.0.0.0":
-            connections[ipVertex ] = 0
+            connections[vertex ] = 0
         else:
             connections[ipVertex ] = port
         self.logging.debug("New Connections: [{}]".format(connections))

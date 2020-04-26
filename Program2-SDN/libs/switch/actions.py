@@ -194,10 +194,10 @@ class Actions(object):
         data = self.recv_data(sock)
         self.parse_fwd_table(data)
 
-    def delete(self, vertex, port:int):
+    def delete(self, sock:socket, port:int):
         """
         """
-        delete_cmd = "{vertex}, DELTE, {port}, {ip}".format(vertex=self.vertex_id, port=port, ip=ip)
+        delete_cmd = "{vertex}, DELETE, {port}, {ip}".format(vertex=self.vertex_id, port=port, ip="0.0.0.0")
         self.logging.debug("Sending DELETE command to controller: [{}]".format(delete_cmd))
         sock.send(bytes(delete_cmd, "utf-8"))
         data = self.recv_data(sock)
