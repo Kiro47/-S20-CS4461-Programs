@@ -6,6 +6,8 @@ import socket
 
 from ..shared.utils import is_IPV4
 from ..shared.data_transfer import recv_data, send_data, recv_greeting
+from ..shared.packets import Adjacency_Matrix_Packet, Adjacency_Matrix_Utils
+from ..controller.network_database import Network_State
 
 class Actions(object):
 
@@ -13,12 +15,15 @@ class Actions(object):
     """
 
     router_sock = None
+    network_state = None
 
-    def __init__(self, router_host:str, router_port:int):
+    def __init__(self, router_host:str, router_port:int, network_state:Network_State):
         """
         """
         self.logging = logging.getLogger(self.__class__.__name__)
         self.logging.debug("Initializing actions")
+        self.network_state = network_state
+        self.adj_utils = Adjacency_Matrix_Utils("Controller")
         self.connect_routing(router_host, router_port)
 
     def connect_routing(self, router_host:str, router_port:int):
@@ -118,11 +123,12 @@ class Actions(object):
         :sock: Socket from the switch connection
         :vertex: Vertex_ID of the switch
         """
-        # TODO: get data from adjacency matrix
-        data = "TEST LOGIN"  # Temp until the above is fiured out
-        self.logging.info("eceived login from: [{addr}] on port [{port}] with vertex_id [{vertex}]".format(
+        self.logging.info("Received login from: [{addr}] on port [{port}] with vertex_id [{vertex}]".format(
             addr=sock.getpeername()[0], port=sock.getsockname()[1], vertex=vertex
             ))
+        self.logging.debug("Packet [{}]".format(self.network_state.adjacency_packet))
+        data = send_data("Controller", self.router_sock, (f"{vertex}, " + str(self.network_state.adjacency_packet)))
+        data = recv_data("Controller", self.router_sock)
         self.send_data(sock, data)
 
 
@@ -130,6 +136,9 @@ class Actions(object):
         """
         """
         data = "TEST ADD"
+        self.network_state.update_port(vertex, port, ip)
+        data = send_data("Controller", self.router_sock, (f"{vertex}, " + str(self.network_state.adjacency_packet)))
+        data = recv_data("Controller", self.router_sock)
         self.send_data(sock, data)
 
 

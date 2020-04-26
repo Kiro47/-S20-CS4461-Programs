@@ -13,6 +13,7 @@ class Actions(object):
     """
 
     vertex_id = "None" # Default override at set_vertex_id()
+    fwd_table = dict()
 
     def __init__(self):
         """
@@ -143,6 +144,19 @@ class Actions(object):
         """
         return recv_data("Switch", sock)
 
+    def parse_fwd_table(self, data:str):
+        """
+        Set new fwd_table from data
+
+        :data: Data to parse
+        """
+        for line in data.splitlines():
+            split = line.split(",")
+            self.fwd_table[split[0].strip()] = split[1].strip()
+        self.logging.debug("New forwarding table: [{}]".format(self.fwd_table))
+        self.logging.info("New forwarding table set")
+
+
     def login(self, sock:socket, vertex:int):
         """
         Login to remote controller, setting up the forwarding table for the
@@ -157,7 +171,7 @@ class Actions(object):
         sock.send(bytes(login_cmd,"utf-8"))
         data = self.recv_data(sock)
         self.logging.debug("Login response: [{}]".format(data))
-        # TODO: parse forwarding table
+        self.parse_fwd_table(data)
 
     def forward(self, ip:str):
         """
@@ -166,8 +180,7 @@ class Actions(object):
         :ip: IPV4 to forward traffic too
         """
         # local only
-        # TODO: get forwarding table data
-        pass
+        self.logging.info("Forward ip[{}] to: [{}]".format(ip, self.fwd_table.get(ip)))
 
     def add(self, sock:socket, port:int, ip:str):
         """
@@ -176,7 +189,7 @@ class Actions(object):
         self.logging.debug("Sending ADD command to controller: [{}]".format(add_cmd))
         sock.send(bytes(add_cmd, "utf-8"))
         data = self.recv_data(sock)
-        # TODO: parse forwarding table data
+        self.parse_fwd_table(data)
 
     def delete(self, vertex, port:int):
         """
@@ -185,7 +198,7 @@ class Actions(object):
         self.logging.debug("Sending DELETE command to controller: [{}]".format(delete_cmd))
         sock.send(bytes(delete_cmd, "utf-8"))
         data = self.recv_data(sock)
-        # TODO: parse forwarding table data
+        self.parse_fwd_table(data)
 
     def exit(self, sock:socket):
         """

@@ -76,9 +76,9 @@ class Graph(object):
 
         :return: Array of tuples of mapping (node, weight)
         """
-      node = self.get_index_from_node(node)
-      column = [row[node] for row in self.adjacency_matrix]
-      return [(self.nodes[row_num], column[row_num]) for row_num in range(len(column)) if column[row_num] != 0]
+        node = self.get_index_from_node(node)
+        column = [row[node] for row in self.adjacency_matrix]
+        return [(self.nodes[row_num], column[row_num]) for row_num in range(len(column)) if column[row_num] != 0]
 
 
     def print_adjacency_matrix(self):

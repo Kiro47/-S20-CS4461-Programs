@@ -15,6 +15,7 @@ def send_data(app:str, sock:socket, data:str):
     data_start = "-- DATA START --"
     data_end = "-- DATA END --"
     data_packet = data_start + data + data_end
+    logger.debug("Sending data: [\n{}\n]".format(data_packet))
     sock.send(bytes(data_packet,"utf-8"))
 
 def recv_data(app:str, sock:socket):

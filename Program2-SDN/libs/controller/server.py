@@ -7,6 +7,7 @@ import threading
 from ..shared.utils import is_IPV4, is_file_path
 from ..shared.data_transfer import send_greeting, recv_greeting, send_data, recv_data
 from ..shared.packets import Adjacency_Matrix_Utils
+from .network_database import Network_State
 from .actions import Actions
 
 class Server(object):
@@ -25,32 +26,21 @@ class Server(object):
         self.verify_args(listening_range, listener_port, adj_matrix_file) # Let exception rise up
         # Load initial routing
         self.initialize_routing(adj_matrix_file, router_host, routing_port)
+        print(id(self.network_state))
         # Start server
         self.server_runner(listening_range, listener_port, router_host, routing_port)
 
     def initialize_routing(self, adj_matrix_file:str, router_host:str, router_port:int):
         """
         """
+        self.network_state = Network_State()
+        print(id(self.network_state))
         # Build initial tables
-        adj_utils = Adjacency_Matrix_Utils("Server")
+        adj_utils = Adjacency_Matrix_Utils("Controller")
         packet = adj_utils.parse_initial_packet(adj_matrix_file)
-        #adj_utils.parse_packet("0, " + str(packet)) # testing for packet parser
-        # Connect to router
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            sock.connect((router_host, router_port))
-        except ConnectionRefusedError as refused:
-            self.logging.exception("Unable to connect to routing host [{}]".format(host))
-        except Exception as exception:
-            self.logging.exception("Exception on connecting to router", exc_info=exception)
-        # Client connected, wait for greeting
-        if not recv_greeting("Controller", sock):
-            return
-        self.logging.info("Connected to router, uploading initial adjacency matrix")
-        send_data("Controller", sock, "6, " + str(packet))
-        # Wait on forwarding table packet
-        forwarding_packet = recv_data("Controller", sock)
-        send_data("Controller", sock, "EXIT")
+        self.logging.debug("Initializing routing with [\n{}]".format(packet))
+        self.network_state.initialize(packet)
+        self.logging.debug("Verify packet was set [\n{}]".format(self.network_state.adjacency_packet))
 
 
     def verify_args(self, listening_range:str, listener_port:int, adj_matrix_file:str):
@@ -132,7 +122,7 @@ class Server(object):
         """
         # Send connection established message
         send_greeting("Server", sock)
-        action = Actions(router_host, routing_port)
+        action = Actions(router_host, routing_port, self.network_state)
         data = ""
 
         while True:

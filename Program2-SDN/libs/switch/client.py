@@ -79,7 +79,7 @@ class Client_Connection(object):
                 if action == "LOGIN":
                     actions.login(sock, arguments.get("vertex_id"))
                 elif action == "FORWARD":
-                    actions.forward(sock, arguments.get("ip"))
+                    actions.forward(arguments.get("ip"))
                 elif action == "ADD":
                     actions.add(sock, arguments.get("port"), arguments.get("ip"))
                 elif action == "DELETE":
