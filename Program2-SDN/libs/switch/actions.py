@@ -12,7 +12,7 @@ class Actions(object):
     """
     """
 
-    vertex_id = "None" # Default override at set_vertex_id()
+    vertex_id = None # Default override at set_vertex_id()
     fwd_table = dict()
 
     def __init__(self):
@@ -165,6 +165,9 @@ class Actions(object):
         :sock: Socket of the controller host to send/recv info to/from
         :vertex: Vertex ID to login as
         """
+        if self.vertex_id:
+            self.logging.info("You are already logged in!  Please exit to login as another vertex")
+            return
         self.vertex_id = vertex
         login_cmd = "{vertex}, ADD, 0, 0.0.0.0".format(vertex=self.vertex_id)
         self.logging.debug("Logging into host controller: [{}]".format(login_cmd))

@@ -26,7 +26,6 @@ class Server(object):
         self.verify_args(listening_range, listener_port, adj_matrix_file) # Let exception rise up
         # Load initial routing
         self.initialize_routing(adj_matrix_file, router_host, routing_port)
-        print(id(self.network_state))
         # Start server
         self.server_runner(listening_range, listener_port, router_host, routing_port)
 
@@ -34,7 +33,6 @@ class Server(object):
         """
         """
         self.network_state = Network_State()
-        print(id(self.network_state))
         # Build initial tables
         adj_utils = Adjacency_Matrix_Utils("Controller")
         packet = adj_utils.parse_initial_packet(adj_matrix_file)

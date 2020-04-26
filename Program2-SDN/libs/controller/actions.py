@@ -127,25 +127,36 @@ class Actions(object):
             addr=sock.getpeername()[0], port=sock.getsockname()[1], vertex=vertex
             ))
         self.logging.debug("Packet [{}]".format(self.network_state.adjacency_packet))
-        data = send_data("Controller", self.router_sock, (f"{vertex}, " + str(self.network_state.adjacency_packet)))
+        self.logging.info("Getting info for vertex[{}] at [{}]:[{}] for login".format(vertex, sock.getpeername()[0],
+            sock.getsockname()[1]))
+        send_data("Controller", self.router_sock, (f"{vertex}, " + str(self.network_state.adjacency_packet)))
         data = recv_data("Controller", self.router_sock)
+        self.logging.info("Sending forwarding packet from login to vertex[{}] at [{}]:[{}]".format(vertex,
+            sock.getpeername()[0], sock.getsockname()[1]))
         self.send_data(sock, data)
 
 
     def add(self, sock:socket, vertex:int, port:int, ip:str):
         """
         """
-        data = "TEST ADD"
+        self.logging.info("Adding connection  vertex[{}] at [{}]:[{}] : [{}]:[{}]".format(vertex,
+            sock.getpeername()[0], sock.getsockname()[1], ip, port))
         self.network_state.update_port(vertex, port, ip)
-        data = send_data("Controller", self.router_sock, (f"{vertex}, " + str(self.network_state.adjacency_packet)))
+        send_data("Controller", self.router_sock, (f"{vertex}, " + str(self.network_state.adjacency_packet)))
         data = recv_data("Controller", self.router_sock)
         self.send_data(sock, data)
+        self.logging.info("Connection added")
 
 
     def delete(self, sock:socket, vertex:int, port:int):
         """
         """
-        data = "TEST DELETE"
+        self.logging.info("Removing connection  vertex[{}] at [{}]:[{}] : [{}]:[{}]".format(vertex,
+            sock.getpeername()[0], sock.getsockname()[1]), ip, port)
+        self.network_state.update_port(vertex, port, "0.0.0.0")
+        self.send_data(sock, data)
+        data = recv_data("Controller", self.router_sock)
+        self.logging.info("Connection Removed")
         self.send_data(sock, data)
 
     def exit(self, sock:socket, vertex:int):
