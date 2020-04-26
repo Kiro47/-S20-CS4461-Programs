@@ -9,3 +9,5 @@ Known Bugs:
       getting around this would involve building a thread pool with a job
       queue and would take a few hours just to figure out how to do, so
       it was ignored for the scope of this program.
+    - Apparently, sometimes the DELETE command duplicates data?  I have no
+      idea where this is happening at.
