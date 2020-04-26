@@ -6,6 +6,7 @@ import threading
 from ..shared.packets import Adjacency_Matrix_Packet, Adjacency_Matrix_Utils
 from ..shared.utils import is_IPV4
 from ..shared.data_transfer import send_greeting, recv_data, send_data
+from .matrix import Matrix_Data
 
 class RoutingServer(object):
 
@@ -96,21 +97,29 @@ class RoutingServer(object):
 
         data = ""
         adj_matrix_utils = Adjacency_Matrix_Utils("Router")
-
+        matrix = Matrix_Data()
         while True:
             data = recv_data("Router", client_sock)
             self.logging.debug("Host [{}], msg: [{}]".format(client_addr, data.rstrip()))
+            # Check if exit command
+            if data.strip() == "EXIT":
+                self.logging.info("EXIT received from host[{}], closing connection".format(client_addr))
+                client_sock.close()
+                break
             # Check if initial load or another
             first_line = data.splitlines()[0].strip()
             packet = None
             if first_line:
                 packet = adj_matrix_utils.parse_packet(data)
-            if len(first_line.split(",")) == 2:
-                # Update tables
-                pass
-            elif len(first_line.split(",")) == 1:
+            split = first_line.split(",")
+            if len(split) == 2:
+                # Get forwarding table
+                fwd_table = matrix.get_forwarding(split[0].strip(), packet)
+                send_data("Router", client_sock, str(fwd_table))
+            elif len(split) == 1:
                 # Initialize tables
-                pass
+                fwd_table = matrix.get_forwarding(None ,packet)
+                send_data("Router", client_sock, str(fwd_table))
             else:
                 # Error
                 self.logging.error("Invalid adjacency matrix packet received")

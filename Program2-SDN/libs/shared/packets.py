@@ -250,10 +250,25 @@ class Forwarding_Packet_Table(object):
     """
     """
 
+    forwarding_rules = list()
+
     def __init__(self):
         """
         """
         pass
+
+    def add_rule(self, dest_ip:str, egress_port:int):
+        """
+        """
+        self.forwarding_rules.append((dest_ip, egress_port))
+
+    def __str__(self):
+        """
+        """
+        data = ""
+        for dest_ip, egress_port in self.forwarding_rules:
+            data += "{dest_ip}, {egress_port}\n".format(dest_ip=dest_ip, egress_port=egress_port)
+        return data
 
 
 class Forwarding_Packet_Utils(object):

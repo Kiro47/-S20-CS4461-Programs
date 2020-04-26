@@ -47,9 +47,10 @@ class Server(object):
         if not recv_greeting("Controller", sock):
             return
         self.logging.info("Connected to router, uploading initial adjacency matrix")
-        send_data("Controller", sock, str(packet))
+        send_data("Controller", sock, "6, " + str(packet))
         # Wait on forwarding table packet
         forwarding_packet = recv_data("Controller", sock)
+        send_data("Controller", sock, "EXIT")
 
 
     def verify_args(self, listening_range:str, listener_port:int, adj_matrix_file:str):
