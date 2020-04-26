@@ -160,4 +160,6 @@ class Actions(object):
             ))
         self.logging.debug("Closing socket for vertex: {}".format(vertex))
         sock.close()
+        self.send_data(self.router_sock, "EXIT")
+        self.router_sock.close()
         exit(0)
